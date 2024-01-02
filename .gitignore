@@ -1,0 +1,72 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# Test output
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+!docs/test-results/
+
+# Environment and secrets - never commit any of these
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.p8
+*.key
+*.keystore
+*.jks
+*.mobileprovision
+*.cer
+*.certSigningRequest
+google-services.json
+GoogleService-Info.plist
+AuthKey_*.p8
+service-account*.json
+aws-credentials*
+secrets/
+
+# Editors
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+.DS_Store
+Thumbs.db
+
+# iOS
+apps/ios/build/
+apps/ios/DerivedData/
+apps/ios/*.xcuserstate
+apps/ios/**/xcuserdata/
+apps/ios/Pods/
+
+# Android
+apps/android/.gradle/
+apps/android/build/
+apps/android/**/build/
+apps/android/local.properties
+apps/android/captures/
+*.apk
+*.aab
+
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+.terraform.lock.hcl
+
+# Local data volumes
+.data/
