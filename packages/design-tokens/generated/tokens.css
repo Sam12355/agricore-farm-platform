@@ -1,0 +1,159 @@
+/*
+ * GuardianLink design tokens.
+ *
+ * Generated from packages/design-tokens/src/tokens.ts.
+ * Do not edit by hand: run `pnpm --filter @guardianlink/design-tokens build` instead.
+ */
+
+:root {
+  --gl-color-surface-base: #ffffff;
+  --gl-color-surface-raised: #f5f7fa;
+  --gl-color-surface-sunken: #e9edf3;
+  --gl-color-surface-overlay: #ffffff;
+  --gl-color-text-primary: #12161c;
+  --gl-color-text-secondary: #4a5462;
+  --gl-color-text-inverse: #ffffff;
+  --gl-color-text-disabled: #767f8c;
+  --gl-color-brand-primary: #0b5f8a;
+  --gl-color-brand-primary-hover: #084a6c;
+  --gl-color-brand-subtle: #e2f0f8;
+  --gl-color-status-safe: #1a6b4a;
+  --gl-color-status-safe-subtle: #e3f4ec;
+  --gl-color-status-caution: #8a5a00;
+  --gl-color-status-caution-subtle: #fdf1dc;
+  --gl-color-status-critical: #a51f2b;
+  --gl-color-status-critical-subtle: #fdeaec;
+  --gl-color-status-neutral: #4a5462;
+  --gl-color-border-default: #d3dae3;
+  --gl-color-border-strong: #6b7684;
+  --gl-color-focus-ring: #0b5f8a;
+  --gl-space-0: 0;
+  --gl-space-1: 0.25rem;
+  --gl-space-2: 0.5rem;
+  --gl-space-3: 0.75rem;
+  --gl-space-4: 1rem;
+  --gl-space-5: 1.5rem;
+  --gl-space-6: 2rem;
+  --gl-space-7: 3rem;
+  --gl-space-8: 4rem;
+  --gl-font-size-xs: 0.75rem;
+  --gl-font-size-sm: 0.875rem;
+  --gl-font-size-base: 1rem;
+  --gl-font-size-lg: 1.125rem;
+  --gl-font-size-xl: 1.375rem;
+  --gl-font-size-2xl: 1.75rem;
+  --gl-font-size-3xl: 2.25rem;
+  --gl-line-height-tight: 1.25;
+  --gl-line-height-normal: 1.5;
+  --gl-line-height-relaxed: 1.7;
+  --gl-font-weight-regular: 400;
+  --gl-font-weight-medium: 500;
+  --gl-font-weight-semibold: 600;
+  --gl-font-weight-bold: 700;
+  --gl-font-family-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --gl-font-family-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  --gl-radius-none: 0;
+  --gl-radius-sm: 0.25rem;
+  --gl-radius-md: 0.5rem;
+  --gl-radius-lg: 0.75rem;
+  --gl-radius-pill: 999px;
+  --gl-shadow-sm: 0 1px 2px rgba(9, 17, 26, 0.08);
+  --gl-shadow-md: 0 4px 12px rgba(9, 17, 26, 0.10);
+  --gl-shadow-lg: 0 12px 32px rgba(9, 17, 26, 0.14);
+  --gl-duration-instant: 80ms;
+  --gl-duration-fast: 150ms;
+  --gl-duration-normal: 240ms;
+  --gl-min-touch-target: 44px;
+  --gl-breakpoint-sm: 480px;
+  --gl-breakpoint-md: 768px;
+  --gl-breakpoint-lg: 1024px;
+  --gl-breakpoint-xl: 1280px;
+}
+
+/* Follows the operating system unless the user has picked a theme explicitly. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+  --gl-color-surface-base: #0d1117;
+  --gl-color-surface-raised: #161b22;
+  --gl-color-surface-sunken: #010409;
+  --gl-color-surface-overlay: #1c2128;
+  --gl-color-text-primary: #e6edf3;
+  --gl-color-text-secondary: #9198a1;
+  --gl-color-text-inverse: #0d1117;
+  --gl-color-text-disabled: #6e7681;
+  --gl-color-brand-primary: #3fa2d6;
+  --gl-color-brand-primary-hover: #63b6e0;
+  --gl-color-brand-subtle: #0d2c3d;
+  --gl-color-status-safe: #4bbf8a;
+  --gl-color-status-safe-subtle: #0e2a1f;
+  --gl-color-status-caution: #e0aa42;
+  --gl-color-status-caution-subtle: #33260a;
+  --gl-color-status-critical: #f0616d;
+  --gl-color-status-critical-subtle: #3d1116;
+  --gl-color-status-neutral: #9198a1;
+  --gl-color-border-default: #30363d;
+  --gl-color-border-strong: #6e7681;
+  --gl-color-focus-ring: #63b6e0;
+  }
+}
+
+:root[data-theme='dark'] {
+  --gl-color-surface-base: #0d1117;
+  --gl-color-surface-raised: #161b22;
+  --gl-color-surface-sunken: #010409;
+  --gl-color-surface-overlay: #1c2128;
+  --gl-color-text-primary: #e6edf3;
+  --gl-color-text-secondary: #9198a1;
+  --gl-color-text-inverse: #0d1117;
+  --gl-color-text-disabled: #6e7681;
+  --gl-color-brand-primary: #3fa2d6;
+  --gl-color-brand-primary-hover: #63b6e0;
+  --gl-color-brand-subtle: #0d2c3d;
+  --gl-color-status-safe: #4bbf8a;
+  --gl-color-status-safe-subtle: #0e2a1f;
+  --gl-color-status-caution: #e0aa42;
+  --gl-color-status-caution-subtle: #33260a;
+  --gl-color-status-critical: #f0616d;
+  --gl-color-status-critical-subtle: #3d1116;
+  --gl-color-status-neutral: #9198a1;
+  --gl-color-border-default: #30363d;
+  --gl-color-border-strong: #6e7681;
+  --gl-color-focus-ring: #63b6e0;
+}
+
+:root[data-theme='light'] {
+  --gl-color-surface-base: #ffffff;
+  --gl-color-surface-raised: #f5f7fa;
+  --gl-color-surface-sunken: #e9edf3;
+  --gl-color-surface-overlay: #ffffff;
+  --gl-color-text-primary: #12161c;
+  --gl-color-text-secondary: #4a5462;
+  --gl-color-text-inverse: #ffffff;
+  --gl-color-text-disabled: #767f8c;
+  --gl-color-brand-primary: #0b5f8a;
+  --gl-color-brand-primary-hover: #084a6c;
+  --gl-color-brand-subtle: #e2f0f8;
+  --gl-color-status-safe: #1a6b4a;
+  --gl-color-status-safe-subtle: #e3f4ec;
+  --gl-color-status-caution: #8a5a00;
+  --gl-color-status-caution-subtle: #fdf1dc;
+  --gl-color-status-critical: #a51f2b;
+  --gl-color-status-critical-subtle: #fdeaec;
+  --gl-color-status-neutral: #4a5462;
+  --gl-color-border-default: #d3dae3;
+  --gl-color-border-strong: #6b7684;
+  --gl-color-focus-ring: #0b5f8a;
+}
+
+/*
+ * Honour the operating-system reduced-motion setting. The console animates incident
+ * rows as they arrive; for someone who has asked for less motion that is not a nice
+ * touch, it is a problem.
+ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --gl-duration-instant: 0ms;
+    --gl-duration-fast: 0ms;
+    --gl-duration-normal: 0ms;
+  }
+}
