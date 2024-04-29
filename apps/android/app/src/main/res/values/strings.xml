@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">GuardianLink</string>
+    <string name="demo_notice_short">GuardianLink is a portfolio demonstration. It does not contact emergency services.</string>
+    <string name="sos_button">Hold to raise an alert</string>
+    <string name="sos_cancel">Cancel alert</string>
+</resources>

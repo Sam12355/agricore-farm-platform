@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Nothing this app stores belongs in a cloud backup. The queued-operation store holds
+  coordinates and the credential store holds tokens; neither should survive to another
+  device through a backup the user did not think about.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="file" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="file" />
+    </device-transfer>
+</data-extraction-rules>
