@@ -1,0 +1,133 @@
+# Local GuardianLink stack.
+#
+#   docker compose -f infrastructure/docker/docker-compose.yml up -d
+#
+# Everything the deployed system uses has a local stand-in here, so the whole product
+# runs with no AWS account, no Twilio account, no APNs key and no spend:
+#
+#   RDS Postgres    -> postgres container
+#   ElastiCache     -> redis container
+#   DocumentDB      -> mongodb container
+#   SQS and S3      -> localstack
+#   SES             -> mailhog, with a web inbox at :8025
+#
+# You do not need any of it to run the tests. The default adapters are in-memory and
+# `pnpm test` touches none of these services. This is here for driving the demo.
+
+name: guardianlink
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: guardianlink
+      POSTGRES_PASSWORD: guardianlink
+      POSTGRES_DB: guardianlink
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      # Migrations run on first start of an empty volume. Re-running them is handled by
+      # the migration runner, not by this mount.
+      - ../../apps/api/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U guardianlink -d guardianlink']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    # Persistence is off deliberately. Everything Redis holds here is rate-limit
+    # counters, short-lived session state and locks; none of it should survive a
+    # restart, and pretending otherwise hides bugs.
+    command: ['redis-server', '--save', '', '--appendonly', 'no']
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  mongodb:
+    image: mongo:7
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  localstack:
+    image: localstack/localstack:3
+    environment:
+      SERVICES: sqs,s3
+      DEBUG: 0
+      # Credentials LocalStack expects. They authenticate against nothing real, which is
+      # the point, but they are still written as obvious placeholders.
+      AWS_ACCESS_KEY_ID: localstack-not-a-real-key
+      AWS_SECRET_ACCESS_KEY: localstack-not-a-real-secret
+      AWS_DEFAULT_REGION: eu-west-1
+    ports:
+      - '4566:4566'
+    volumes:
+      - ./localstack-init.sh:/etc/localstack/init/ready.d/init.sh:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -sf http://localhost:4566/_localstack/health || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 15
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    ports:
+      - '1025:1025' # SMTP
+      - '8025:8025' # web inbox: open this to read what the demo "sent"
+    healthcheck:
+      test: ['CMD-SHELL', 'nc -z localhost 1025 || exit 1']
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/api.Dockerfile
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      mongodb: { condition: service_healthy }
+      localstack: { condition: service_healthy }
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      LOG_LEVEL: info
+      # Generated per run. They are throwaway by design: nothing outside this compose
+      # file ever sees a token signed with them.
+      JWT_ACCESS_SECRET: local-development-access-secret-not-for-any-real-use
+      JWT_REFRESH_SECRET: local-development-refresh-secret-not-for-any-real-use
+      JWT_CONTACT_VIEW_SECRET: local-development-contact-secret-not-for-any-real-use
+      PERSISTENCE: postgres
+      DATABASE_URL: postgres://guardianlink:guardianlink@postgres:5432/guardianlink
+      TELEMETRY_STORE: mongodb
+      MONGODB_URI: mongodb://mongodb:27017/guardianlink
+      CACHE: redis
+      REDIS_URL: redis://redis:6379
+      NOTIFICATION_TRANSPORT: inprocess
+      EMAIL_PROVIDER: smtp
+      SMTP_URL: smtp://mailhog:1025
+      OBJECT_STORE: s3
+      S3_BUCKET: guardianlink-local
+      AWS_ENDPOINT_URL: http://localstack:4566
+      AWS_REGION: eu-west-1
+      CORS_ALLOWED_ORIGINS: http://localhost:3000
+    ports:
+      - '3001:3001'
+
+volumes:
+  postgres-data:
+  mongo-data:
