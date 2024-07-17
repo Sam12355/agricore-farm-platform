@@ -42,7 +42,7 @@
       }
     },
     {
-      "files": ["**/scripts/**/*.ts", "**/seed/**/*.ts"],
+      "files": ["**/scripts/**/*.ts", "**/seed/**/*.ts", "**/generate.ts"],
       "rules": {
         "no-console": "off"
       }
