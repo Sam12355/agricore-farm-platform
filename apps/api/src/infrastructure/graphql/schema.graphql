@@ -1,0 +1,135 @@
+# GraphQL surface for the operator console.
+#
+# Read model and live updates only. Every mutation stays on REST, and that split is
+# deliberate rather than an omission:
+#
+#   - The console's reads are nested and vary per screen. The queue wants a summary, the
+#     detail panel wants an incident plus its timeline plus its notifications in one round
+#     trip. That is what GraphQL is good at, and it is what REST makes awkward.
+#
+#   - The mutations are the opposite. They need an Idempotency-Key header, a precise status
+#     code, a Retry-After on 429, and a 409 carrying the current version. All of that is
+#     HTTP semantics that GraphQL flattens into a 200 with an errors array, and the mobile
+#     clients depend on it.
+#
+# So: GraphQL where nested reads help, REST where the transport semantics matter.
+
+scalar DateTime
+
+enum IncidentStatus {
+  active
+  acknowledged
+  resolved
+  cancelled
+}
+
+enum IncidentPriority {
+  low
+  standard
+  high
+  critical
+}
+
+enum IncidentTrigger {
+  sos_countdown
+  manual_panic
+  session_overdue
+  operator_created
+}
+
+enum ActorType {
+  user
+  operator
+  contact
+  system
+}
+
+type GeoPoint {
+  latitude: Float!
+  longitude: Float!
+  accuracyMetres: Float!
+  capturedAt: DateTime!
+}
+
+type IncidentEvent {
+  id: ID!
+  "Per-incident monotonic sequence. Order by this, never by a timestamp."
+  sequence: Int!
+  type: String!
+  actorType: ActorType!
+  actorId: ID
+  "When it happened, which is not always when the server heard about it."
+  occurredAt: DateTime!
+  recordedAt: DateTime!
+}
+
+type Incident {
+  id: ID!
+  status: IncidentStatus!
+  priority: IncidentPriority!
+  trigger: IncidentTrigger!
+  activatedAt: DateTime!
+  resolvedAt: DateTime
+  claimedByOperatorId: ID
+  claimedAt: DateTime
+  "Optimistic concurrency token. Send it back on every REST mutation."
+  version: Int!
+  lastKnownLocation: GeoPoint
+
+  """
+  The timeline. Pass `after` with the highest sequence already applied to fetch only what
+  is new, which is what the console does on reconnect.
+  """
+  events(after: Int = 0, limit: Int = 200): [IncidentEvent!]!
+
+  "Number of trusted contacts notified. A count, never the contacts themselves."
+  notifiedContactCount: Int!
+}
+
+type IncidentPage {
+  items: [Incident!]!
+  nextCursor: String
+  hasMore: Boolean!
+}
+
+type QueueCounts {
+  activeCount: Int!
+  unclaimedCount: Int!
+}
+
+type Query {
+  """
+  The operator queue. Cursor pagination, never offset: incidents arrive continuously, and
+  an offset window silently skips a row when something is inserted between pages.
+  """
+  incidents(
+    status: IncidentStatus
+    priority: IncidentPriority
+    claimed: ClaimFilter
+    limit: Int = 25
+    cursor: String
+  ): IncidentPage!
+
+  incident(id: ID!): Incident
+
+  queueCounts: QueueCounts!
+}
+
+enum ClaimFilter {
+  any
+  mine
+  unclaimed
+}
+
+type Subscription {
+  """
+  Live incident updates for the operator queue.
+
+  Authorisation is checked per subscription, not only at connection. Without that, any
+  authenticated user could subscribe to a stranger's incident and watch their location
+  move.
+  """
+  incidentUpdated(incidentId: ID): Incident!
+
+  queueChanged: QueueCounts!
+}

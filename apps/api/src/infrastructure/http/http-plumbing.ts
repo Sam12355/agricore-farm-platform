@@ -19,6 +19,7 @@ import {
   createParamDecorator,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { GqlExecutionContext } from '@nestjs/graphql';
 import type { NextFunction, Request, Response } from 'express';
 import { type Observable, tap } from 'rxjs';
 import type { ZodSchema } from 'zod';
@@ -34,6 +35,27 @@ export const CORRELATION_HEADER = 'x-correlation-id';
 export interface AuthenticatedRequest extends Request {
   correlationId: string;
   auth?: { userId: string; role: UserRole; familyId: string };
+}
+
+/**
+ * Pulls the request out of whichever execution context this is.
+ *
+ * `switchToHttp().getRequest()` returns undefined under GraphQL, which produces a
+ * "cannot read properties of undefined" three frames deep in a guard rather than a useful
+ * error. Every guard and decorator below goes through here so the same authorisation code
+ * covers REST and GraphQL rather than being reimplemented per transport.
+ *
+ * GqlExecutionContext is a static import. An earlier version required it lazily to keep
+ * @nestjs/graphql out of a non-GraphQL build, but a `require()` inside a hot path is worse
+ * on every axis: it defeats tree-shaking anyway, it is a lint error, and it moves a
+ * failure that belongs at startup into the middle of a request.
+ */
+export function requestFrom(context: ExecutionContext): AuthenticatedRequest | undefined {
+  if (context.getType<string>() === 'graphql') {
+    return GqlExecutionContext.create(context).getContext<{ req?: AuthenticatedRequest }>().req;
+  }
+
+  return context.switchToHttp().getRequest<AuthenticatedRequest>();
 }
 
 /**
@@ -86,13 +108,13 @@ export const Roles = (...roles: UserRole[]) => SetMetadata(ROLES_KEY, roles);
 export const Public = () => SetMetadata(PUBLIC_KEY, true);
 
 export const CurrentUser = createParamDecorator((_data: unknown, ctx: ExecutionContext) => {
-  const request = ctx.switchToHttp().getRequest<AuthenticatedRequest>();
-  if (request.auth === undefined) throw new UnauthorizedException();
+  const request = requestFrom(ctx);
+  if (request?.auth === undefined) throw new UnauthorizedException();
   return request.auth;
 });
 
 export const CorrelationId = createParamDecorator((_data: unknown, ctx: ExecutionContext) => {
-  return ctx.switchToHttp().getRequest<AuthenticatedRequest>().correlationId;
+  return requestFrom(ctx)?.correlationId ?? 'unknown';
 });
 
 /**
@@ -101,8 +123,8 @@ export const CorrelationId = createParamDecorator((_data: unknown, ctx: Executio
  * decorator still deduplicates per request rather than not at all.
  */
 export const IdempotencyKey = createParamDecorator((_data: unknown, ctx: ExecutionContext) => {
-  const request = ctx.switchToHttp().getRequest<AuthenticatedRequest>();
-  return request.header('idempotency-key') ?? request.correlationId;
+  const request = requestFrom(ctx);
+  return request?.header('idempotency-key') ?? request?.correlationId ?? 'unknown';
 });
 
 /**
@@ -128,7 +150,15 @@ export class AuthGuard implements CanActivate {
     ]);
     if (isPublic) return true;
 
-    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
+    const request = requestFrom(context);
+    if (request === undefined) {
+      // No request object at all means an execution context this guard does not
+      // understand. Failing closed is the only safe answer.
+      throw new HttpException(
+        toErrorBody(DomainErrors.unauthenticated(), 'unknown'),
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
     const header = request.header('authorization');
 
     if (header === undefined || !header.startsWith('Bearer ')) {
@@ -193,7 +223,13 @@ export class RateLimitGuard implements CanActivate {
     ]);
     if (spec === undefined) return true;
 
-    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
+    const request = requestFrom(context);
+    if (request === undefined) return true;
+
+    // GraphQL has no per-operation response object to hang Retry-After on, and the
+    // whole GraphQL surface is read-only. Rate limiting for it belongs at the edge.
+    if (context.getType<string>() === 'graphql') return true;
+
     const response = context.switchToHttp().getResponse<Response>();
 
     const subject =

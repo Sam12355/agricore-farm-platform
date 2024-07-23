@@ -1,5 +1,9 @@
 import { type MiddlewareConsumer, Module, type NestModule, type Provider } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { ApolloDriver, type ApolloDriverConfig } from '@nestjs/apollo';
+import { GraphQLModule } from '@nestjs/graphql';
+import { PubSub } from 'graphql-subscriptions';
+import { join } from 'node:path';
 
 import { SystemClock, type Clock } from '@guardianlink/shared-types';
 
@@ -10,9 +14,11 @@ import { NotificationDispatchService } from './application/services/notification
 import { PrivacyService } from './application/services/privacy.service';
 import { SafetySessionService } from './application/services/safety-session.service';
 import { SosService } from './application/services/sos.service';
+import { SubscriptionService } from './application/services/subscription.service';
 import { TrustedContactService } from './application/services/trusted-contact.service';
 import { PORTS } from './application/tokens';
 import { loadConfig, type AppConfig } from './config/configuration';
+import { AdminController, SubscriptionController } from './infrastructure/http/controllers/admin.controller';
 import { AuthController } from './infrastructure/http/controllers/auth.controller';
 import {
   ContactViewController,
@@ -49,6 +55,7 @@ import {
   MemoryTrustedContactRepository,
   MemoryUserRepository,
 } from './infrastructure/persistence/memory/memory-repositories';
+import { GraphQlEventBridge, IncidentResolver, PUB_SUB } from './infrastructure/graphql/incident.resolver';
 import { RealtimeGateway } from './infrastructure/realtime/realtime.gateway';
 import { ScryptPasswordHasher } from './infrastructure/security/password-hasher';
 import { JwtTokenService } from './infrastructure/security/token.service';
@@ -148,6 +155,12 @@ function buildProviders(config: AppConfig): Provider[] {
     RealtimeGateway,
     { provide: PORTS.RealtimePublisher, useExisting: RealtimeGateway },
 
+    // One PubSub instance shared by the resolver and the bridge. In a multi-task
+    // deployment this becomes a Redis-backed PubSub, which is the same interface.
+    { provide: PUB_SUB, useValue: new PubSub() },
+    { provide: GraphQlEventBridge, useFactory: (pubSub: PubSub) => new GraphQlEventBridge(pubSub), inject: [PUB_SUB] },
+    IncidentResolver,
+
     IdentityService,
     TrustedContactService,
     SafetySessionService,
@@ -156,6 +169,7 @@ function buildProviders(config: AppConfig): Provider[] {
     ContactViewService,
     PrivacyService,
     NotificationDispatchService,
+    SubscriptionService,
     OutboxWorker,
 
     { provide: APP_GUARD, useClass: AuthGuard },
@@ -179,7 +193,26 @@ export class AppModule implements NestModule {
         IncidentController,
         ContactViewController,
         PrivacyController,
+        SubscriptionController,
+        AdminController,
         OpsController,
+      ],
+      imports: [
+        GraphQLModule.forRoot<ApolloDriverConfig>({
+          driver: ApolloDriver,
+          typePaths: [join(__dirname, 'infrastructure', 'graphql', '*.graphql')],
+          // Schema-first rather than code-first. The schema file is the artefact a
+          // console developer reads, and keeping it hand-written means it can carry the
+          // comments explaining why mutations are not here.
+          playground: false,
+          introspection: config.NODE_ENV !== 'production',
+          path: '/graphql',
+          subscriptions: { 'graphql-ws': true },
+          // Errors are already normalised by the HTTP layer. This stops Apollo adding a
+          // stacktrace to the payload in development, which is a habit that eventually
+          // ships.
+          includeStacktraceInErrorResponses: false,
+        }),
       ],
       providers: buildProviders(config),
     };

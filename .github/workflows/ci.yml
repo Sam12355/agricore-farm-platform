@@ -180,10 +180,11 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Assemble debug
         working-directory: apps/android
-        run: ./gradlew --no-daemon assembleDebug
+        # No wrapper binary is committed, so the gradle provided by setup-gradle is used.
+        run: gradle --no-daemon assembleDebug
       - name: Unit tests
         working-directory: apps/android
-        run: ./gradlew --no-daemon testDebugUnitTest
+        run: gradle --no-daemon testDebugUnitTest
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -199,6 +200,11 @@ jobs:
     if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ios')
     steps:
       - uses: actions/checkout@v4
+      - name: Generate the Xcode project
+        run: |
+          brew install xcodegen
+          cd apps/ios && xcodegen generate
+
       - name: Show available SDKs
         run: xcodebuild -showsdks
       - name: Build and test
