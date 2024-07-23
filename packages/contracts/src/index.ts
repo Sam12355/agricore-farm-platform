@@ -7,3 +7,5 @@ export * from './privacy';
 export * from './realtime';
 export * from './subscriptions';
 export * from './routes';
+export * from './openapi/document';
+export * from './openapi/zod-to-openapi';

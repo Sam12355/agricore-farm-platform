@@ -1,0 +1,128 @@
+# XcodeGen project definition.
+#
+# The .xcodeproj is generated from this file rather than committed. A pbxproj is 3000
+# lines of unreadable UUIDs that conflicts on every branch and that nobody can review; this
+# is 100 lines that diff usefully and can be argued about in a pull request.
+#
+#   brew install xcodegen
+#   xcodegen generate
+#   open GuardianLink.xcodeproj
+#
+# The generated project is gitignored, which is the point.
+
+name: GuardianLink
+
+options:
+  bundleIdPrefix: com.guardianlink
+  deploymentTarget:
+    iOS: '16.0'
+  createIntermediateGroups: true
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    SWIFT_VERSION: '5.9'
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    # Warnings become errors. A warning nobody fixes is a warning nobody reads, and after
+    # a few dozen of them the real one is invisible.
+    SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
+    GCC_TREAT_WARNINGS_AS_ERRORS: YES
+    CLANG_ENABLE_MODULE_VERIFIER: YES
+    # No signing configuration anywhere in this file. There are no signing assets in this
+    # repository and there never will be; CI injects them from named secrets.
+    CODE_SIGN_STYLE: Manual
+    CODE_SIGNING_REQUIRED: NO
+    CODE_SIGNING_ALLOWED: NO
+
+configs:
+  Debug: debug
+  Staging: release
+  Release: release
+
+targets:
+  GuardianLink:
+    type: application
+    platform: iOS
+    sources:
+      - path: GuardianLink
+    dependencies:
+      - target: GuardianLinkWidget
+      - target: GuardianLinkIntents
+    settings:
+      base:
+        INFOPLIST_FILE: GuardianLink/Info.plist
+        PRODUCT_NAME: GuardianLink
+        TARGETED_DEVICE_FAMILY: '1,2'
+        # Dynamic Type and VoiceOver are tested, so the build should not silently disable
+        # the things that make them work.
+        ENABLE_BITCODE: NO
+      configs:
+        Debug:
+          PRODUCT_BUNDLE_IDENTIFIER: com.guardianlink.debug
+          API_BASE_URL: http:/$()/localhost:3001
+          SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
+        Staging:
+          PRODUCT_BUNDLE_IDENTIFIER: com.guardianlink.staging
+          API_BASE_URL: https:/$()/staging.example.invalid
+        Release:
+          PRODUCT_BUNDLE_IDENTIFIER: com.guardianlink
+          API_BASE_URL: https:/$()/api.example.invalid
+
+  GuardianLinkWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: GuardianLinkWidget
+    settings:
+      base:
+        INFOPLIST_FILE: GuardianLinkWidget/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: com.guardianlink.widget
+
+  GuardianLinkIntents:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: GuardianLinkIntents
+    settings:
+      base:
+        INFOPLIST_FILE: GuardianLinkIntents/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: com.guardianlink.intents
+
+  GuardianLinkTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: GuardianLinkTests
+    dependencies:
+      - target: GuardianLink
+    settings:
+      base:
+        # The test target needs no network stubs, no simulator entitlements and no
+        # StoreKit configuration, because every dependency is behind a protocol.
+        BUNDLE_LOADER: $(TEST_HOST)
+
+  GuardianLinkUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: GuardianLinkUITests
+    dependencies:
+      - target: GuardianLink
+
+schemes:
+  GuardianLink:
+    build:
+      targets:
+        GuardianLink: all
+        GuardianLinkWidget: all
+        GuardianLinkIntents: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      gatherCoverageData: true
+      targets:
+        - GuardianLinkTests
+        - GuardianLinkUITests
+    archive:
+      config: Release

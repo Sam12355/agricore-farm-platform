@@ -1,0 +1,3523 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "GuardianLink API",
+    "version": "0.1.0",
+    "description": "GuardianLink is a portfolio demonstration built to show engineering work. It is not a real safety service, it does not contact emergency services, and no real person is monitoring it. In a genuine emergency, contact your local emergency number.\n\nEvery schema in this document is generated from the Zod schemas in packages/contracts, which are the same definitions the server validates against.",
+    "license": {
+      "name": "MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3001",
+      "description": "Local development"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Identity",
+      "description": "Registration, sign-in, token rotation"
+    },
+    {
+      "name": "Trusted contacts",
+      "description": "The people notified during an incident"
+    },
+    {
+      "name": "Safety sessions",
+      "description": "Planned journeys with an expected end time"
+    },
+    {
+      "name": "SOS",
+      "description": "Countdown, cancellation and activation"
+    },
+    {
+      "name": "Incidents",
+      "description": "Timeline, location and resolution"
+    },
+    {
+      "name": "Operator",
+      "description": "Claim, notes and priority. Operators only"
+    },
+    {
+      "name": "Trusted contact",
+      "description": "The credential-free contact view"
+    },
+    {
+      "name": "Privacy",
+      "description": "Settings, export and deletion"
+    },
+    {
+      "name": "Subscriptions",
+      "description": "Store-verified entitlements"
+    },
+    {
+      "name": "Administration",
+      "description": "Audit log. Admins only"
+    },
+    {
+      "name": "Operations",
+      "description": "Liveness and readiness"
+    }
+  ],
+  "components": {
+    "schemas": {
+      "RegisterRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 254,
+            "format": "email"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 12,
+            "maxLength": 128
+          },
+          "displayName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "acceptedDemoNotice": {
+            "const": true
+          }
+        },
+        "required": [
+          "email",
+          "password",
+          "displayName",
+          "acceptedDemoNotice"
+        ],
+        "additionalProperties": false
+      },
+      "LoginRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 254,
+            "format": "email"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "deviceName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ],
+        "additionalProperties": false
+      },
+      "RefreshRequest": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string",
+            "minLength": 20,
+            "maxLength": 512
+          }
+        },
+        "required": [
+          "refreshToken"
+        ],
+        "additionalProperties": false
+      },
+      "AuthResponse": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "email": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 254,
+                "format": "email"
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "role": {
+                "type": "string",
+                "enum": [
+                  "user",
+                  "operator",
+                  "admin"
+                ]
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "ISO 8601 timestamp with offset, always UTC on the wire"
+              }
+            },
+            "required": [
+              "id",
+              "email",
+              "displayName",
+              "role",
+              "createdAt"
+            ],
+            "additionalProperties": false
+          },
+          "tokens": {
+            "type": "object",
+            "properties": {
+              "accessToken": {
+                "type": "string"
+              },
+              "expiresIn": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "refreshToken": {
+                "type": "string"
+              },
+              "refreshExpiresIn": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "tokenType": {
+                "const": "Bearer"
+              }
+            },
+            "required": [
+              "accessToken",
+              "expiresIn",
+              "refreshToken",
+              "refreshExpiresIn",
+              "tokenType"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "user",
+          "tokens"
+        ],
+        "additionalProperties": false
+      },
+      "CreateTrustedContact": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "email": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 254,
+            "format": "email"
+          },
+          "phone": {
+            "type": "string",
+            "minLength": 6,
+            "maxLength": 24,
+            "pattern": "^[+()\\d\\s-]+$"
+          },
+          "relationship": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "priority": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10,
+            "default": 1
+          },
+          "preferredChannel": {
+            "type": "string",
+            "enum": [
+              "email",
+              "sms",
+              "push",
+              "any"
+            ],
+            "default": "any"
+          },
+          "canViewLiveLocation": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "UpdateTrustedContact": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 3,
+            "maxLength": 254,
+            "format": "email"
+          },
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 6,
+            "maxLength": 24,
+            "pattern": "^[+()\\d\\s-]+$"
+          },
+          "relationship": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 40
+          },
+          "priority": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10
+          },
+          "preferredChannel": {
+            "type": "string",
+            "enum": [
+              "email",
+              "sms",
+              "push",
+              "any"
+            ]
+          },
+          "canViewLiveLocation": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "TrustedContact": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "relationship": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "priority": {
+            "type": "integer"
+          },
+          "preferredChannel": {
+            "type": "string",
+            "enum": [
+              "email",
+              "sms",
+              "push",
+              "any"
+            ]
+          },
+          "canViewLiveLocation": {
+            "type": "boolean"
+          },
+          "verifiedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "ISO 8601 timestamp with offset, always UTC on the wire"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp with offset, always UTC on the wire"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp with offset, always UTC on the wire"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "phone",
+          "relationship",
+          "priority",
+          "preferredChannel",
+          "canViewLiveLocation",
+          "verifiedAt",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "StartSafetySession": {
+        "type": "object",
+        "properties": {
+          "expectedDurationMinutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 720
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "destinationLabel": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "shareLiveLocation": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "required": [
+          "expectedDurationMinutes"
+        ],
+        "additionalProperties": false
+      },
+      "EndSafetySession": {
+        "type": "object",
+        "properties": {
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "arrived_safely",
+              "cancelled"
+            ]
+          }
+        },
+        "required": [
+          "outcome"
+        ],
+        "additionalProperties": false
+      },
+      "SafetySession": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "completed",
+              "expired",
+              "escalated"
+            ]
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp with offset, always UTC on the wire"
+          },
+          "expectedEndAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp with offset, always UTC on the wire"
+          },
+          "endedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "ISO 8601 timestamp with offset, always UTC on the wire"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "destinationLabel": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "shareLiveLocation": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "startedAt",
+          "expectedEndAt",
+          "endedAt",
+          "note",
+          "destinationLabel",
+          "shareLiveLocation"
+        ],
+        "additionalProperties": false
+      },
+      "StartCountdown": {
+        "type": "object",
+        "properties": {
+          "durationSeconds": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 60,
+            "default": 10
+          },
+          "sessionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "activationIdempotencyKey": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "activationIdempotencyKey"
+        ],
+        "additionalProperties": false
+      },
+      "CancelCountdown": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "enum": [
+              "user_cancelled",
+              "false_trigger"
+            ],
+            "default": "user_cancelled"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Countdown": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "cancelled",
+              "activated"
+            ]
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp with offset, always UTC on the wire"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp with offset, always UTC on the wire"
+          },
+          "cancelledAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "ISO 8601 timestamp with offset, always UTC on the wire"
+          },
+          "incidentId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "startedAt",
+          "expiresAt",
+          "cancelledAt",
+          "incidentId"
+        ],
+        "additionalProperties": false
+      },
+      "ActivateIncident": {
+        "type": "object",
+        "properties": {
+          "countdownId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sessionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "trigger": {
+            "type": "string",
+            "enum": [
+              "sos_countdown",
+              "manual_panic",
+              "session_overdue",
+              "operator_created"
+            ],
+            "default": "sos_countdown"
+          },
+          "location": {
+            "type": "object",
+            "properties": {
+              "latitude": {
+                "type": "number",
+                "minimum": -90,
+                "maximum": 90
+              },
+              "longitude": {
+                "type": "number",
+                "minimum": -180,
+                "maximum": 180
+              },
+              "accuracyMetres": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              "capturedAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "ISO 8601 timestamp with offset, always UTC on the wire"
+              }
+            },
+            "required": [
+              "latitude",
+              "longitude",
+              "accuracyMetres",
+              "capturedAt"
+            ],
+            "additionalProperties": false
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 280
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp with offset, always UTC on the wire"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Incident": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sessionId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "acknowledged",
+              "resolved",
+              "cancelled"
+            ]
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "low",
+              "standard",
+              "high",
+              "critical"
+            ]
+          },
+          "trigger": {
+            "type": "string",
+            "enum": [
+              "sos_countdown",
+              "manual_panic",
+              "session_overdue",
+              "operator_created"
+            ]
+          },
+          "activatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp with offset, always UTC on the wire"
+          },
+          "resolvedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "ISO 8601 timestamp with offset, always UTC on the wire"
+          },
+          "resolvedBy": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "claimedByOperatorId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "claimedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "ISO 8601 timestamp with offset, always UTC on the wire"
+          },
+          "lastKnownLocation": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "latitude": {
+                "type": "number",
+                "minimum": -90,
+                "maximum": 90
+              },
+              "longitude": {
+                "type": "number",
+                "minimum": -180,
+                "maximum": 180
+              },
+              "accuracyMetres": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              "capturedAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "ISO 8601 timestamp with offset, always UTC on the wire"
+              }
+            },
+            "required": [
+              "latitude",
+              "longitude",
+              "accuracyMetres",
+              "capturedAt"
+            ],
+            "additionalProperties": false
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp with offset, always UTC on the wire"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp with offset, always UTC on the wire"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "sessionId",
+          "status",
+          "priority",
+          "trigger",
+          "activatedAt",
+          "resolvedAt",
+          "resolvedBy",
+          "claimedByOperatorId",
+          "claimedAt",
+          "lastKnownLocation",
+          "version",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "IncidentTimeline": {
+        "type": "object",
+        "properties": {
+          "incident": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "userId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "sessionId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "active",
+                  "acknowledged",
+                  "resolved",
+                  "cancelled"
+                ]
+              },
+              "priority": {
+                "type": "string",
+                "enum": [
+                  "low",
+                  "standard",
+                  "high",
+                  "critical"
+                ]
+              },
+              "trigger": {
+                "type": "string",
+                "enum": [
+                  "sos_countdown",
+                  "manual_panic",
+                  "session_overdue",
+                  "operator_created"
+                ]
+              },
+              "activatedAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "ISO 8601 timestamp with offset, always UTC on the wire"
+              },
+              "resolvedAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time",
+                "description": "ISO 8601 timestamp with offset, always UTC on the wire"
+              },
+              "resolvedBy": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid"
+              },
+              "claimedByOperatorId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid"
+              },
+              "claimedAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time",
+                "description": "ISO 8601 timestamp with offset, always UTC on the wire"
+              },
+              "lastKnownLocation": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "latitude": {
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 90
+                  },
+                  "longitude": {
+                    "type": "number",
+                    "minimum": -180,
+                    "maximum": 180
+                  },
+                  "accuracyMetres": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100000
+                  },
+                  "capturedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "ISO 8601 timestamp with offset, always UTC on the wire"
+                  }
+                },
+                "required": [
+                  "latitude",
+                  "longitude",
+                  "accuracyMetres",
+                  "capturedAt"
+                ],
+                "additionalProperties": false
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "ISO 8601 timestamp with offset, always UTC on the wire"
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "ISO 8601 timestamp with offset, always UTC on the wire"
+              }
+            },
+            "required": [
+              "id",
+              "userId",
+              "sessionId",
+              "status",
+              "priority",
+              "trigger",
+              "activatedAt",
+              "resolvedAt",
+              "resolvedBy",
+              "claimedByOperatorId",
+              "claimedAt",
+              "lastKnownLocation",
+              "version",
+              "createdAt",
+              "updatedAt"
+            ],
+            "additionalProperties": false
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "incidentId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "sequence": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "incident.activated",
+                    "incident.location_recorded",
+                    "incident.contact_notified",
+                    "incident.contact_acknowledged",
+                    "incident.notification_failed",
+                    "incident.operator_claimed",
+                    "incident.operator_released",
+                    "incident.operator_note_added",
+                    "incident.priority_changed",
+                    "incident.status_changed",
+                    "incident.resolved",
+                    "incident.cancelled"
+                  ]
+                },
+                "actorType": {
+                  "type": "string",
+                  "enum": [
+                    "user",
+                    "operator",
+                    "contact",
+                    "system"
+                  ]
+                },
+                "actorId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid"
+                },
+                "occurredAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "ISO 8601 timestamp with offset, always UTC on the wire"
+                },
+                "recordedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "ISO 8601 timestamp with offset, always UTC on the wire"
+                },
+                "payload": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              },
+              "required": [
+                "id",
+                "incidentId",
+                "sequence",
+                "type",
+                "actorType",
+                "actorId",
+                "occurredAt",
+                "recordedAt",
+                "payload"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "latestSequence": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "incident",
+          "events",
+          "latestSequence"
+        ],
+        "additionalProperties": false
+      },
+      "RecordLocation": {
+        "type": "object",
+        "properties": {
+          "points": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "latitude": {
+                  "type": "number",
+                  "minimum": -90,
+                  "maximum": 90
+                },
+                "longitude": {
+                  "type": "number",
+                  "minimum": -180,
+                  "maximum": 180
+                },
+                "accuracyMetres": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                "capturedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "ISO 8601 timestamp with offset, always UTC on the wire"
+                }
+              },
+              "required": [
+                "latitude",
+                "longitude",
+                "accuracyMetres",
+                "capturedAt"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 1,
+            "maxItems": 50,
+            "description": "Batched so an offline client can flush a backlog in one request."
+          }
+        },
+        "required": [
+          "points"
+        ],
+        "additionalProperties": false
+      },
+      "LocationBatchAccepted": {
+        "type": "object",
+        "properties": {
+          "accepted": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "rejected": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "latestSequence": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "accepted",
+          "rejected",
+          "latestSequence"
+        ],
+        "additionalProperties": false
+      },
+      "ClaimIncident": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "expectedVersion"
+        ],
+        "additionalProperties": false
+      },
+      "AddOperatorNote": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "note",
+          "expectedVersion"
+        ],
+        "additionalProperties": false
+      },
+      "ChangePriority": {
+        "type": "object",
+        "properties": {
+          "priority": {
+            "type": "string",
+            "enum": [
+              "low",
+              "standard",
+              "high",
+              "critical"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 280
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "priority",
+          "expectedVersion"
+        ],
+        "additionalProperties": false
+      },
+      "ResolveIncident": {
+        "type": "object",
+        "properties": {
+          "resolution": {
+            "type": "string",
+            "enum": [
+              "user_safe",
+              "false_alarm",
+              "handled_offline",
+              "duplicate"
+            ]
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "resolution",
+          "expectedVersion"
+        ],
+        "additionalProperties": false
+      },
+      "ContactIncidentView": {
+        "type": "object",
+        "properties": {
+          "incidentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "acknowledged",
+              "resolved",
+              "cancelled"
+            ]
+          },
+          "subjectDisplayName": {
+            "type": "string"
+          },
+          "activatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp with offset, always UTC on the wire"
+          },
+          "lastKnownLocation": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "latitude": {
+                "type": "number"
+              },
+              "longitude": {
+                "type": "number"
+              },
+              "accuracyMetres": {
+                "type": "number"
+              },
+              "capturedAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "ISO 8601 timestamp with offset, always UTC on the wire"
+              }
+            },
+            "required": [
+              "latitude",
+              "longitude",
+              "accuracyMetres",
+              "capturedAt"
+            ],
+            "additionalProperties": false
+          },
+          "acknowledgedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "ISO 8601 timestamp with offset, always UTC on the wire"
+          },
+          "demoNotice": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "incidentId",
+          "status",
+          "subjectDisplayName",
+          "activatedAt",
+          "lastKnownLocation",
+          "acknowledgedAt",
+          "demoNotice"
+        ],
+        "additionalProperties": false
+      },
+      "AcknowledgeIncident": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": "string",
+            "maxLength": 280
+          }
+        },
+        "additionalProperties": false
+      },
+      "PrivacySettings": {
+        "type": "object",
+        "properties": {
+          "shareLocationWithContacts": {
+            "type": "boolean"
+          },
+          "shareLocationWithOperators": {
+            "type": "boolean"
+          },
+          "storePreciseLocationHistory": {
+            "type": "boolean"
+          },
+          "incidentRetentionDays": {
+            "type": "integer",
+            "minimum": 30,
+            "maximum": 1095
+          },
+          "locationRetentionDays": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 90
+          },
+          "notificationLogRetentionDays": {
+            "type": "integer",
+            "minimum": 7,
+            "maximum": 365
+          },
+          "allowAnonymisedProductAnalytics": {
+            "type": "boolean"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp with offset, always UTC on the wire"
+          }
+        },
+        "required": [
+          "shareLocationWithContacts",
+          "shareLocationWithOperators",
+          "storePreciseLocationHistory",
+          "incidentRetentionDays",
+          "locationRetentionDays",
+          "notificationLogRetentionDays",
+          "allowAnonymisedProductAnalytics",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "UpdatePrivacySettings": {
+        "type": "object",
+        "properties": {
+          "shareLocationWithContacts": {
+            "type": "boolean"
+          },
+          "shareLocationWithOperators": {
+            "type": "boolean"
+          },
+          "storePreciseLocationHistory": {
+            "type": "boolean"
+          },
+          "incidentRetentionDays": {
+            "type": "integer",
+            "minimum": 30,
+            "maximum": 1095
+          },
+          "locationRetentionDays": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 90
+          },
+          "notificationLogRetentionDays": {
+            "type": "integer",
+            "minimum": 7,
+            "maximum": 365
+          },
+          "allowAnonymisedProductAnalytics": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DataExportRequest": {
+        "type": "object",
+        "properties": {
+          "format": {
+            "type": "string",
+            "enum": [
+              "json"
+            ],
+            "default": "json"
+          },
+          "includeLocationHistory": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DataExportStatus": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "ready",
+              "failed",
+              "expired"
+            ]
+          },
+          "requestedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp with offset, always UTC on the wire"
+          },
+          "readyAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "ISO 8601 timestamp with offset, always UTC on the wire"
+          },
+          "expiresAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "ISO 8601 timestamp with offset, always UTC on the wire"
+          },
+          "downloadUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri"
+          },
+          "sizeBytes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "requestedAt",
+          "readyAt",
+          "expiresAt",
+          "downloadUrl",
+          "sizeBytes"
+        ],
+        "additionalProperties": false
+      },
+      "AccountDeletionStatus": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "none",
+              "scheduled",
+              "completed"
+            ]
+          },
+          "requestedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "ISO 8601 timestamp with offset, always UTC on the wire"
+          },
+          "scheduledFor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "ISO 8601 timestamp with offset, always UTC on the wire"
+          },
+          "cancellableUntil": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "ISO 8601 timestamp with offset, always UTC on the wire"
+          }
+        },
+        "required": [
+          "status",
+          "requestedAt",
+          "scheduledFor",
+          "cancellableUntil"
+        ],
+        "additionalProperties": false
+      },
+      "Subscription": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tier": {
+            "type": "string",
+            "enum": [
+              "free",
+              "plus",
+              "family"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "none",
+              "active",
+              "in_grace_period",
+              "expired",
+              "cancelled"
+            ]
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "apple",
+              "google",
+              "none"
+            ]
+          },
+          "startedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "ISO 8601 timestamp with offset, always UTC on the wire"
+          },
+          "expiresAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "ISO 8601 timestamp with offset, always UTC on the wire"
+          },
+          "autoRenewing": {
+            "type": "boolean"
+          },
+          "productId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "tier",
+          "status",
+          "platform",
+          "startedAt",
+          "expiresAt",
+          "autoRenewing",
+          "productId"
+        ],
+        "additionalProperties": false
+      },
+      "VerifyPurchase": {
+        "type": "object",
+        "properties": {
+          "platform": {
+            "type": "string",
+            "enum": [
+              "apple",
+              "google"
+            ]
+          },
+          "productId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "signedPayload": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 8192
+          }
+        },
+        "required": [
+          "platform",
+          "productId",
+          "signedPayload"
+        ],
+        "additionalProperties": false
+      },
+      "Entitlement": {
+        "type": "object",
+        "properties": {
+          "tier": {
+            "type": "string",
+            "enum": [
+              "free",
+              "plus",
+              "family"
+            ]
+          },
+          "features": {
+            "type": "object",
+            "properties": {
+              "maxTrustedContacts": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "liveLocationSharing": {
+                "type": "boolean"
+              },
+              "extendedIncidentHistoryDays": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "priorityOperatorQueue": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "maxTrustedContacts",
+              "liveLocationSharing",
+              "extendedIncidentHistoryDays",
+              "priorityOperatorQueue"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "tier",
+          "features"
+        ],
+        "additionalProperties": false
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "details": {
+                "type": "object",
+                "additionalProperties": {}
+              },
+              "correlationId": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message",
+              "correlationId"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "additionalProperties": false
+      },
+      "HealthResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "degraded",
+              "down"
+            ]
+          },
+          "version": {
+            "type": "string"
+          },
+          "uptimeSeconds": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "status",
+          "version",
+          "uptimeSeconds"
+        ],
+        "additionalProperties": false
+      },
+      "ReadinessResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ready",
+              "not_ready"
+            ]
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "up",
+                    "down"
+                  ]
+                },
+                "detail": {
+                  "type": "string"
+                },
+                "latencyMs": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "name",
+                "status"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "status",
+          "checks"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Short-lived access token. Carries a subject, a role and a token family, and nothing that identifies a person."
+      }
+    }
+  },
+  "paths": {
+    "/api/v1/auth/register": {
+      "post": {
+        "summary": "Create an account",
+        "tags": [
+          "Identity"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Account created and signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The address cannot be registered. Deliberately identical wording to any other conflict, so registration cannot be used to enumerate accounts.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "summary": "Sign in",
+        "description": "An unknown address and a wrong password return identical responses in comparable time.",
+        "tags": [
+          "Identity"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication is required or the token is not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "summary": "Exchange a refresh token",
+        "description": "Refresh tokens are single-use and rotate. Presenting one twice revokes the whole token family, because a replay and a theft are indistinguishable from here.",
+        "tags": [
+          "Identity"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "New token pair.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication is required or the token is not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "summary": "Sign out",
+        "description": "Revokes the whole token family. An unknown token still returns 204: there is nothing useful a caller can do with the distinction, and answering honestly leaks token validity.",
+        "tags": [
+          "Identity"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Signed out."
+          },
+          "400": {
+            "description": "The request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "summary": "The signed-in account",
+        "tags": [
+          "Identity"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account details."
+          },
+          "401": {
+            "description": "Authentication is required or the token is not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Also returned for a resource that exists but belongs to someone else, so the response cannot be used to confirm an identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/trusted-contacts": {
+      "get": {
+        "summary": "List trusted contacts",
+        "tags": [
+          "Trusted contacts"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Contacts in priority order.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrustedContact"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication is required or the token is not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Add a trusted contact",
+        "description": "The contact cap is an entitlement and is enforced server side.",
+        "tags": [
+          "Trusted contacts"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTrustedContact"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Contact added.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrustedContact"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication is required or the token is not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "The plan does not allow another contact.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/trusted-contacts/{id}": {
+      "patch": {
+        "summary": "Update a trusted contact",
+        "tags": [
+          "Trusted contacts"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Trusted contact identifier.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTrustedContact"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrustedContact"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Also returned for a resource that exists but belongs to someone else, so the response cannot be used to confirm an identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Remove a trusted contact",
+        "description": "Soft delete, so a past incident timeline still resolves the contact.",
+        "tags": [
+          "Trusted contacts"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Trusted contact identifier.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Removed."
+          },
+          "404": {
+            "description": "Not found. Also returned for a resource that exists but belongs to someone else, so the response cannot be used to confirm an identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/safety-sessions": {
+      "get": {
+        "summary": "List safety sessions",
+        "tags": [
+          "Safety sessions"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sessions, newest first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SafetySession"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Start a safety session",
+        "description": "One active session per user, enforced by a unique partial index.",
+        "tags": [
+          "Safety sessions"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartSafetySession"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Session started.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SafetySession"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A session is already running.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/safety-sessions/{id}/end": {
+      "post": {
+        "summary": "End a safety session",
+        "tags": [
+          "Safety sessions"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Session identifier.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EndSafetySession"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Session ended.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SafetySession"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Also returned for a resource that exists but belongs to someone else, so the response cannot be used to confirm an identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sos/countdown": {
+      "post": {
+        "summary": "Start an SOS countdown",
+        "description": "The activation idempotency key is minted here rather than at activation, so a client that crashes mid-countdown still deduplicates when it restarts and retries.",
+        "tags": [
+          "SOS"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartCountdown"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Countdown started.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Countdown"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sos/countdown/{id}/cancel": {
+      "post": {
+        "summary": "Cancel a countdown",
+        "description": "Cancelling twice is success. Cancelling after expiry is 412: the alert is going out and the user is told so, rather than being shown a cancelled screen while contacts are messaged.",
+        "tags": [
+          "SOS"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Countdown identifier.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelCountdown"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cancelled.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Countdown"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated, but not permitted to do this.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Also returned for a resource that exists but belongs to someone else, so the response cannot be used to confirm an identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "The countdown already finished.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sos/activate": {
+      "post": {
+        "summary": "Raise an incident",
+        "description": "Idempotent, and the key is mandatory. Deduplicated at this layer against a stored response and again at the database with a unique index, which covers two concurrent retries that both miss the store.",
+        "tags": [
+          "SOS"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "Generated by the client when the countdown starts, not when the request is sent, so a crash mid-countdown still deduplicates on retry. Reusing a key with a different body is a 409.",
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActivateIncident"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Replay of an earlier activation. Same incident.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Incident"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Incident raised.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Incident"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or malformed Idempotency-Key, or invalid body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The key was used with a different body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The countdown was cancelled.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents": {
+      "get": {
+        "summary": "List incidents",
+        "description": "Scoped to the caller unless they are an operator or an admin.",
+        "tags": [
+          "Incidents"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of incidents.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Incident"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication is required or the token is not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/{id}": {
+      "get": {
+        "summary": "Read an incident",
+        "tags": [
+          "Incidents"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Incident identifier.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The incident.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Incident"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Also returned for a resource that exists but belongs to someone else, so the response cannot be used to confirm an identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/{id}/timeline": {
+      "get": {
+        "summary": "Read the incident timeline",
+        "description": "Append-only, ordered by sequence. Pass `after` to fetch only what is new.",
+        "tags": [
+          "Incidents"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Incident identifier.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "description": "Highest sequence already applied. Zero returns everything.",
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Incident and events.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentTimeline"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Also returned for a resource that exists but belongs to someone else, so the response cannot be used to confirm an identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/{id}/location": {
+      "post": {
+        "summary": "Record location",
+        "description": "Accepted only from the subject and only while the incident is open, so every point on the operator map came from the device that was there. Batched so an offline client can flush a backlog in one request.",
+        "tags": [
+          "Incidents"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Incident identifier.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordLocation"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationBatchAccepted"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Only the subject may share location.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The incident is closed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/{id}/claim": {
+      "post": {
+        "summary": "Claim an incident",
+        "description": "Operators only. The claim is a five-minute lease and expires on its own.",
+        "tags": [
+          "Operator"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Incident identifier.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClaimIncident"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Claimed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Incident"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated, but not permitted to do this.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Held by another operator, or the version is stale.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/{id}/release": {
+      "post": {
+        "summary": "Release a claim",
+        "description": "Only the holder may release. Releasing an already-lapsed lease is success, because the operator intent is already satisfied.",
+        "tags": [
+          "Operator"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Incident identifier.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClaimIncident"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Released.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Incident"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "You do not hold the claim.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict, including a stale version or a reused idempotency key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/{id}/notes": {
+      "post": {
+        "summary": "Add an operator note",
+        "tags": [
+          "Operator"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Incident identifier.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddOperatorNote"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Note added.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Incident"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict, including a stale version or a reused idempotency key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/{id}/priority": {
+      "post": {
+        "summary": "Change incident priority",
+        "tags": [
+          "Operator"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Incident identifier.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePriority"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Priority changed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Incident"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict, including a stale version or a reused idempotency key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/{id}/resolve": {
+      "post": {
+        "summary": "Resolve an incident",
+        "description": "Open to the subject and to the claiming operator. An operator without the claim is refused, so the timeline never records a resolution by somebody who was not working it.",
+        "tags": [
+          "Incidents"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Incident identifier.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveIncident"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resolved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Incident"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict, including a stale version or a reused idempotency key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/contact-view/{token}": {
+      "get": {
+        "summary": "What a trusted contact sees",
+        "description": "No account. The signed token in the path is the credential: one incident, one contact, time-boxed, carrying no role and no user id.",
+        "tags": [
+          "Trusted contact"
+        ],
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "description": "Signed, single-incident, single-contact view token.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A trimmed incident projection.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContactIncidentView"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The link is not valid or has expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/contact-view/{token}/acknowledge": {
+      "post": {
+        "summary": "Acknowledge as a trusted contact",
+        "description": "Idempotent. A contact will tap the link twice, from two devices, at 2am.",
+        "tags": [
+          "Trusted contact"
+        ],
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "description": "Signed view token.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcknowledgeIncident"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Acknowledged.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContactIncidentView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/privacy/settings": {
+      "get": {
+        "summary": "Read privacy settings",
+        "tags": [
+          "Privacy"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current settings.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrivacySettings"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update privacy settings",
+        "description": "Retention values are bounded at both ends by the schema.",
+        "tags": [
+          "Privacy"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePrivacySettings"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrivacySettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/privacy/export": {
+      "post": {
+        "summary": "Export everything held about this account",
+        "description": "Rate limited to three an hour: bulk extraction should be slow and noisy.",
+        "tags": [
+          "Privacy"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DataExportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Export ready.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataExportStatus"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/privacy/deletion": {
+      "get": {
+        "summary": "Deletion status",
+        "tags": [
+          "Privacy"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountDeletionStatus"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Request account deletion",
+        "description": "Requires the current password and an exact confirmation phrase. Every session is revoked immediately; the data goes after a fourteen-day grace period.",
+        "tags": [
+          "Privacy"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Deletion scheduled."
+          },
+          "400": {
+            "description": "The request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication is required or the token is not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Cancel a scheduled deletion",
+        "tags": [
+          "Privacy"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Cancelled."
+          }
+        }
+      }
+    },
+    "/api/v1/subscriptions/current": {
+      "get": {
+        "summary": "Current subscription",
+        "tags": [
+          "Subscriptions"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Subscription state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Subscription"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/subscriptions/verify": {
+      "post": {
+        "summary": "Verify a store purchase",
+        "description": "The signed payload is verified with the store. The client view of entitlement is never trusted.",
+        "tags": [
+          "Subscriptions"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyPurchase"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Verified.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Subscription"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/subscriptions/entitlement": {
+      "get": {
+        "summary": "Effective entitlement",
+        "tags": [
+          "Subscriptions"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Feature limits for the current tier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entitlement"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/audit-log": {
+      "get": {
+        "summary": "Read the audit log",
+        "description": "Admins only. Records hold identifiers and field names, never values: this table outlives every retention setting in the product.",
+        "tags": [
+          "Administration"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of audit records."
+          },
+          "403": {
+            "description": "Authenticated, but not permitted to do this.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/users": {
+      "get": {
+        "summary": "List accounts",
+        "description": "Admins only, and deliberately thin: identity and deletion state, no incidents, no contacts, no location. An admin role exists to answer \"who did what\", not to be a second operator console with fewer restrictions.",
+        "tags": [
+          "Administration"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of accounts."
+          },
+          "403": {
+            "description": "Authenticated, but not permitted to do this.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Liveness",
+        "description": "Checks nothing external. A database blip must not restart every task.",
+        "tags": [
+          "Operations"
+        ],
+        "responses": {
+          "200": {
+            "description": "The process is alive.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notice": {
+      "get": {
+        "summary": "The demonstration notice",
+        "description": "Served from the same constant the mobile apps and the web header use, so no surface can quietly drop it or show different wording.",
+        "tags": [
+          "Operations"
+        ],
+        "responses": {
+          "200": {
+            "description": "The notice text."
+          }
+        }
+      }
+    },
+    "/ready": {
+      "get": {
+        "summary": "Readiness",
+        "description": "Checks dependencies. Returns 503 when they are down, which is what a load balancer reads.",
+        "tags": [
+          "Operations"
+        ],
+        "responses": {
+          "200": {
+            "description": "Ready for traffic.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Not ready.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
