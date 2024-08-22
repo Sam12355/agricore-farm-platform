@@ -10,7 +10,7 @@ operator console. Built as a portfolio piece.**
 <!-- Badges point at the workflows in .github/workflows once the repository is on GitHub.
      They are left as plain links rather than shields for a repository that is not pushed yet. -->
 [![ci](https://img.shields.io/badge/ci-github%20actions-blue)](.github/workflows/ci.yml)
-[![tests](https://img.shields.io/badge/tests-256%20passing-brightgreen)](docs/test-results/)
+[![tests](https://img.shields.io/badge/tests-340%20passing-brightgreen)](docs/test-results/)
 [![licence](https://img.shields.io/badge/licence-MIT-blue)](LICENSE)
 
 ---
@@ -230,15 +230,18 @@ family. Enforced twice: at the HTTP layer and again at the database with a uniqu
 
 Honest list. These are things that are missing or unfinished, not things I forgot to mention.
 
-- **iOS is not compiled.** No macOS machine was available. The Swift sources and project
-  configuration are complete and reviewable, and the CI job exists, but nothing here claims the iOS
-  app builds. See [docs/test-results/](docs/test-results/).
+- **iOS is not compiled.** No macOS machine was available. The Swift sources, the widget, the
+  App Intents and the XCTest suites are complete and reviewable, and the CI job exists, but
+  nothing here claims the iOS app builds. Android is in the same position: the SDK is present
+  but there is no Gradle distribution on the build machine.
 - **Terraform is not validated locally.** The CLI was not installed on the build machine. CI runs
   `fmt` and `validate`; no `plan` has been run against a real account and nothing was deployed.
 - **Contact verification is not implemented.** The `verified_at` column exists and the notification
   path already prefers verified addresses, but there is no flow that sets it.
-- **GraphQL covers the operator read model only.** Mutations are REST. Splitting them this way is
-  deliberate but it does mean the GraphQL surface is smaller than the REST one.
+- **GraphQL covers the operator read model and subscriptions only.** Mutations stay on REST
+  because they need an Idempotency-Key header, a precise status code, Retry-After on 429 and a
+  409 carrying the current version, all of which GraphQL flattens into a 200 with an errors
+  array. Deliberate, and it does make the GraphQL surface smaller than the REST one.
 - **Escalation is time-based, not adaptive.** A fixed window per step. Real products tune this per
   contact and per time of day.
 - **No push notifications to real devices.** Mock providers only, by design. The APNs and FCM
