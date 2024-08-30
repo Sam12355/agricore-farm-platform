@@ -40,7 +40,7 @@ data to be deleted all have a defined and tested answer.
 | Data | PostgreSQL as the source of truth, MongoDB for append-only telemetry with a TTL, Redis for rate limiting, locks and presence |
 | Real-time | Per-incident monotonic sequencing, gap replay on reconnect, room-level authorisation |
 | Infrastructure | Terraform for ECS Fargate, RDS, ElastiCache, SQS, S3, CloudWatch; Docker Compose for a full local stack with no cloud account |
-| Quality | 256 automated tests that need no external services, WCAG contrast enforced by a failing test, PII redaction enforced by a failing test |
+| Quality | 340 automated tests that need no external services, WCAG contrast enforced by a failing test, PII redaction enforced by a failing test, and an OpenAPI document checked against the routes the router actually registers |
 
 ## Architecture
 
