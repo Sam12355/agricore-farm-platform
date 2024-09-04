@@ -9,14 +9,14 @@ import {
   type UserRole,
   err,
   ok,
-} from '@guardianlink/shared-types';
+} from '@agricore/shared-types';
 
 import type { AccessTokenPayload, TokenService } from '../../application/ports';
 
 export interface TokenConfig {
   readonly accessSecret: string;
   readonly refreshSecret: string;
-  readonly contactViewSecret: string;
+  readonly workerViewSecret: string;
   readonly issuer: string;
   readonly audience: string;
   readonly accessTtlSeconds: number;
@@ -99,48 +99,48 @@ export class JwtTokenService implements TokenService {
   }
 
   /**
-   * The link a trusted contact receives.
+   * The link an assigned worker receives.
    *
-   * It names exactly one incident and one contact, and it expires. There is no way to
+   * It names exactly one alert and one worker, and it expires. There is no way to
    * widen it: the token has no role, no user id and no list scope, so the worst a leaked
-   * link can do is show one incident that someone was already entitled to see.
+   * link can do is show one alert that someone was already entitled to see.
    */
-  issueContactViewToken(input: {
-    incidentId: string;
-    contactId: string;
+  issueWorkerViewToken(input: {
+    alertId: string;
+    workerId: string;
     ttlSeconds: number;
   }): string {
     return jwt.sign(
-      { inc: input.incidentId, con: input.contactId, typ: 'contact-view' },
-      this.config.contactViewSecret,
+      { inc: input.alertId, con: input.workerId, typ: 'worker-view' },
+      this.config.workerViewSecret,
       {
         algorithm: 'HS256',
         expiresIn: input.ttlSeconds,
         issuer: this.config.issuer,
-        audience: 'contact-view',
+        audience: 'worker-view',
       },
     );
   }
 
-  verifyContactViewToken(token: string): Result<{ incidentId: string; contactId: string }, DomainError> {
+  verifyWorkerViewToken(token: string): Result<{ alertId: string; workerId: string }, DomainError> {
     try {
-      const decoded = jwt.verify(token, this.config.contactViewSecret, {
+      const decoded = jwt.verify(token, this.config.workerViewSecret, {
         algorithms: ['HS256'],
         issuer: this.config.issuer,
-        audience: 'contact-view',
+        audience: 'worker-view',
       });
 
-      if (typeof decoded === 'string' || decoded['typ'] !== 'contact-view') {
+      if (typeof decoded === 'string' || decoded['typ'] !== 'worker-view') {
         return err(DomainErrors.unauthenticated('That link is not valid.'));
       }
 
-      const incidentId = decoded['inc'];
-      const contactId = decoded['con'];
-      if (typeof incidentId !== 'string' || typeof contactId !== 'string') {
+      const alertId = decoded['inc'];
+      const workerId = decoded['con'];
+      if (typeof alertId !== 'string' || typeof workerId !== 'string') {
         return err(DomainErrors.unauthenticated('That link is not valid.'));
       }
 
-      return ok({ incidentId, contactId });
+      return ok({ alertId, workerId });
     } catch (error) {
       if (error instanceof jwt.TokenExpiredError) {
         return err(DomainErrors.unauthenticated('That link has expired.'));

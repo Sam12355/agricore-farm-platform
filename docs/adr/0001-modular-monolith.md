@@ -5,7 +5,7 @@
 
 ## Context
 
-GuardianLink has ten backend domains: identity, users, trusted contacts, safety sessions, incidents,
+AgriCore has ten backend domains: identity, users, assigned workers, field operations, alerts,
 location, notifications, subscriptions, audit and administration. A portfolio project is under some
 pressure to show a distributed architecture, because that is what "senior" is often read to mean.
 
@@ -18,10 +18,10 @@ calls.
 
 Splitting this would create real problems in exchange for none that I currently have.
 
-The activation path writes an incident, its opening timeline events and its outbox rows in a single
+The activation path writes an alert, its opening timeline events and its outbox rows in a single
 transaction. Across services that becomes a distributed transaction or a saga, with compensating
-actions, partial-failure states, and a window where an incident exists but nobody has been notified.
-The user believes help is coming during that window. That is a far worse property than anything a
+actions, partial-failure states, and a window where an alert exists but nobody has been notified.
+The worker believes somebody has been told during that window. That is a far worse property than anything a
 monolith costs here.
 
 There is also no operational reason. No domain has a different scaling profile, a different

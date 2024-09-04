@@ -27,12 +27,12 @@ describe('normaliseLimit', () => {
 
 describe('cursor encoding', () => {
   it('round-trips', () => {
-    const payload = { sortValue: '2026-01-01T00:00:00.000Z', id: 'incident-123' };
+    const payload = { sortValue: '2026-01-01T00:00:00.000Z', id: 'alert-123' };
     expect(decodeCursor(encodeCursor(payload))).toEqual(payload);
   });
 
   it('round-trips when the sort value itself contains the separator', () => {
-    const payload = { sortValue: 'a|b|c', id: 'incident-9' };
+    const payload = { sortValue: 'a|b|c', id: 'alert-9' };
     expect(decodeCursor(encodeCursor(payload))).toEqual(payload);
   });
 

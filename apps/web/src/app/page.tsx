@@ -1,11 +1,11 @@
-import { DEMO_NOTICE_FULL } from '@guardianlink/contracts';
+import { DEMO_NOTICE_FULL } from '@agricore/contracts';
 
 export default function HomePage() {
   return (
     <div className="page">
-      <h1>GuardianLink</h1>
+      <h1>AgriCore</h1>
       <p className="lead">
-        Personal safety and trusted contacts, across iOS, Android and the web.
+        Field operations, alerts and the people working them, across iOS, Android and the web.
       </p>
 
       <section aria-labelledby="notice-heading" className="card card--notice">
@@ -18,16 +18,16 @@ export default function HomePage() {
         <ul className="surface-list">
           <li>
             <a href="/portal">
-              <strong>User portal</strong>
+              <strong>Farm portal</strong>
             </a>
-            <p>Trusted contacts, safety sessions, incident history, privacy and data controls.</p>
+            <p>Assigned workers, field operations, alert history, privacy and data controls.</p>
           </li>
           <li>
             <a href="/console">
-              <strong>Operator console</strong>
+              <strong>Manager console</strong>
             </a>
             <p>
-              Live incident queue, map and timeline, claim and resolve. Updates arrive over a socket;
+              Live alert queue, map and timeline, claim and resolve. Updates arrive over a socket;
               nothing is polled.
             </p>
           </li>

@@ -5,12 +5,12 @@
 
 ## Context
 
-Two operator consoles and a mobile client all watch the same incident. Events arrive over a socket
+Two manager consoles and a mobile client all watch the same alert. Events arrive over a socket
 that drops, on networks that reorder, from devices whose clocks are wrong.
 
 ## Decision
 
-Every incident event carries a monotonic per-incident sequence number allocated inside the writing
+Every alert event carries a monotonic per-alert sequence number allocated inside the writing
 transaction. Clients order by sequence, track the highest they have applied, and send it on reconnect
 so the server replays exactly the gap.
 
@@ -22,7 +22,7 @@ Timestamps do not work, for three independent reasons, any one of which is enoug
 `occurredAt` puts events in an order that never happened.
 
 **Server timestamps lack resolution.** Two events written in the same millisecond have no defined
-order, and the operator sees "resolved" before "note added".
+order, and the manager sees "resolved" before "note added".
 
 **Neither tells a reconnecting client what it missed.** With a timestamp the client asks for
 everything since a time and gets duplicates, or asks since the last one it saw and races the clock.
@@ -30,7 +30,7 @@ With a sequence it says "I have up to 41" and the answer is exact.
 
 Allocation has to happen inside the writing transaction, not in application code. If the application
 picked the number, two concurrent writers could both choose 7 and the timeline would fork. Postgres
-does this with a per-incident sequence and a unique constraint on `(incident_id, sequence)`; the
+does this with a per-alert sequence and a unique constraint on `(alert_id, sequence)`; the
 in-memory adapter does the same in a single synchronous block.
 
 Both fields are kept. `occurredAt` is what the client reports and what gets displayed; `sequence` is
@@ -43,8 +43,8 @@ actually happened while still slotting into the timeline correctly.
 harmless because a client drops anything at or below what it has applied. History can be replayed
 from the event log to reconstruct any past state.
 
-**Bad.** A sequence per incident is a hot row under concurrent writes to one incident. Fine here,
-where a busy incident sees a handful of writes a second.
+**Bad.** A sequence per alert is a hot row under concurrent writes to one alert. Fine here,
+where a busy alert sees a handful of writes a second.
 
 **Also bad.** A client that misses more than the replay window has to refetch. The response says
 `truncated: true` rather than silently sending a partial stream, but the client has to handle it.

@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 
-import { buildOpenApiDocument } from '@guardianlink/contracts';
+import { buildOpenApiDocument } from '@agricore/contracts';
 
 import { AppModule } from '../app.module';
 import { developmentConfig } from '../config/configuration';
@@ -18,7 +18,7 @@ import { developmentConfig } from '../config/configuration';
  * consistent and can still describe an endpoint that was renamed, or miss one that was
  * added. Comparing it against the live router is the only way to know.
  *
- *   pnpm --filter @guardianlink/api openapi:emit
+ *   pnpm --filter @agricore/api openapi:emit
  */
 
 interface RouteLayer {

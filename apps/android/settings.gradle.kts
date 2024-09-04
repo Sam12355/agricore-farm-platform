@@ -20,5 +20,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "GuardianLink"
+rootProject.name = "AgriCore"
 include(":app")

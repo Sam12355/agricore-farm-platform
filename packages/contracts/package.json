@@ -1,8 +1,8 @@
 {
-  "name": "@guardianlink/contracts",
+  "name": "@agricore/contracts",
   "version": "0.1.0",
   "private": true,
-  "description": "Single source of truth for the GuardianLink API surface: Zod schemas, derived types and the OpenAPI generator.",
+  "description": "Single source of truth for the AgriCore API surface: Zod schemas, derived types and the OpenAPI generator.",
   "license": "MIT",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -18,7 +18,7 @@
     "openapi": "node ./dist/openapi/generate.js"
   },
   "dependencies": {
-    "@guardianlink/shared-types": "workspace:*",
+    "@agricore/shared-types": "workspace:*",
     "zod": "^3.24.1"
   },
   "devDependencies": {

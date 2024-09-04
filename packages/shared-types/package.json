@@ -1,8 +1,8 @@
 {
-  "name": "@guardianlink/shared-types",
+  "name": "@agricore/shared-types",
   "version": "0.1.0",
   "private": true,
-  "description": "Domain primitives, branded identifiers, Result type and error codes shared across GuardianLink packages.",
+  "description": "Domain primitives, branded identifiers, Result type and error codes shared across AgriCore packages.",
   "license": "MIT",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

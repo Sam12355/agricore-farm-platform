@@ -7,12 +7,12 @@
  */
 
 export const DEMO_NOTICE_SHORT =
-  'GuardianLink is a portfolio demonstration. It does not contact emergency services.';
+  'AgriCore is a portfolio demonstration. It is not connected to any real farm.';
 
 export const DEMO_NOTICE_FULL =
-  'GuardianLink is a portfolio demonstration built to show engineering work. It is not a real ' +
-  'safety service, it does not contact emergency services, and no real person is monitoring it. ' +
-  'In a genuine emergency, contact your local emergency number.';
+  'AgriCore is a portfolio demonstration built to show engineering work. It is not a ' +
+  'working farm operations service, no real sensor, machine or field is connected to it, ' +
+  'and nobody is monitoring the alerts it raises. Do not use it to run an actual farm.';
 
 export const DEMO_NOTICE_ACKNOWLEDGEMENT =
-  'I understand this is a demonstration and not an emergency service.';
+  'I understand this is a demonstration and not a working farm operations service.';

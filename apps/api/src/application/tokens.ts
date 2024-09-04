@@ -13,10 +13,10 @@ export const PORTS = {
 
   UserRepository: Symbol('UserRepository'),
   RefreshTokenRepository: Symbol('RefreshTokenRepository'),
-  TrustedContactRepository: Symbol('TrustedContactRepository'),
-  SafetySessionRepository: Symbol('SafetySessionRepository'),
+  WorkerRepository: Symbol('WorkerRepository'),
+  FieldOperationRepository: Symbol('FieldOperationRepository'),
   CountdownRepository: Symbol('CountdownRepository'),
-  IncidentRepository: Symbol('IncidentRepository'),
+  AlertRepository: Symbol('AlertRepository'),
   LocationTelemetryRepository: Symbol('LocationTelemetryRepository'),
   OutboxRepository: Symbol('OutboxRepository'),
   NotificationRepository: Symbol('NotificationRepository'),

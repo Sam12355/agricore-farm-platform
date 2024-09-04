@@ -1,4 +1,4 @@
-import { RetentionBounds, defaultPrivacySettings } from '@guardianlink/contracts';
+import { RetentionBounds, defaultPrivacySettings } from '@agricore/contracts';
 
 /**
  * User portal.
@@ -14,7 +14,7 @@ export default function PortalPage() {
   return (
     <div className="page">
       <h1>Your account</h1>
-      <p className="lead">Trusted contacts, safety sessions, and what GuardianLink keeps.</p>
+      <p className="lead">Assigned workers, field operations, and what AgriCore keeps.</p>
 
       <section aria-labelledby="privacy-heading">
         <h2 id="privacy-heading">Privacy defaults</h2>
@@ -36,13 +36,13 @@ export default function PortalPage() {
           </thead>
           <tbody>
             <tr>
-              <th scope="row">Share location with trusted contacts</th>
-              <td>{defaults.shareLocationWithContacts ? 'On' : 'Off'}</td>
+              <th scope="row">Share location with assigned workers</th>
+              <td>{defaults.shareLocationWithWorkers ? 'On' : 'Off'}</td>
               <td>On or off</td>
             </tr>
             <tr>
-              <th scope="row">Share location with operators</th>
-              <td>{defaults.shareLocationWithOperators ? 'On' : 'Off'}</td>
+              <th scope="row">Share location with managers</th>
+              <td>{defaults.shareLocationWithManagers ? 'On' : 'Off'}</td>
               <td>On or off</td>
             </tr>
             <tr>
@@ -53,10 +53,10 @@ export default function PortalPage() {
               </td>
             </tr>
             <tr>
-              <th scope="row">Keep incidents for</th>
-              <td>{defaults.incidentRetentionDays} days</td>
+              <th scope="row">Keep alerts for</th>
+              <td>{defaults.alertRetentionDays} days</td>
               <td>
-                {RetentionBounds.incidentDays.min} to {RetentionBounds.incidentDays.max} days
+                {RetentionBounds.alertDays.min} to {RetentionBounds.alertDays.max} days
               </td>
             </tr>
             <tr>

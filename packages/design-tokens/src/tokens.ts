@@ -1,5 +1,5 @@
 /**
- * The GuardianLink design tokens.
+ * The AgriCore design tokens.
  *
  * This file is the only place a colour, a spacing step or a type size is decided. The
  * generator turns it into CSS custom properties for the web, a Swift enum for iOS and a
@@ -20,7 +20,7 @@ export interface ColorToken {
 /**
  * The palette is deliberately calm. A safety product that shouts in red at every screen
  * trains people to ignore red, which is exactly the wrong outcome when it matters.
- * Red is reserved for the active-incident state and nothing else.
+ * Red is reserved for the active-alert state and nothing else.
  */
 export const color = {
   // Surfaces
@@ -108,12 +108,12 @@ export const color = {
   'status-critical': {
     light: '#a51f2b',
     dark: '#f0616d',
-    description: 'Active incident. Used nowhere else',
+    description: 'Active alert. Used nowhere else',
   },
   'status-critical-subtle': {
     light: '#fdeaec',
     dark: '#3d1116',
-    description: 'Active incident background',
+    description: 'Active alert background',
   },
   'status-neutral': {
     light: '#4a5462',

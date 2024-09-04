@@ -6,9 +6,9 @@ reviewing.
 
 ---
 
-## Entry 1 - Incident aggregate
+## Entry 1 - Alert aggregate
 
-**Delegated:** implement the incident state machine from `docs/specs/0001-operator-claim-lease.md`,
+**Delegated:** implement the alert state machine from `docs/specs/0001-manager-claim-lease.md`,
 pure functions over immutable state, no I/O.
 
 **Context given:** the spec, `shared-types` for `Result` and the enums, and the rule that the domain
@@ -21,21 +21,21 @@ acknowledge and resolve, each returning `Result<Transition, DomainError>`.
 
 - The first version had the aggregate assigning event sequence numbers. That is wrong: two concurrent
   writers can both choose 7 and the timeline forks. Sequence allocation belongs to the repository,
-  inside the writing transaction. Rewritten so the aggregate emits `PendingIncidentEvent` with no id
+  inside the writing transaction. Rewritten so the aggregate emits `PendingAlertEvent` with no id
   and no sequence, and the store assigns both.
 - `recordLocation` replaced `lastKnownLocation` with the final element of the array. A flushed
   offline queue is not sorted, so a stale point could overwrite a newer one. Changed to take the
   newest by capture time and only replace if it is genuinely newer.
 
-**Corrected by hand:** `acknowledge` returned a conflict on a second call. A trusted contact will tap
-that link twice, from two devices, at two in the morning. Made it idempotent: the second call is
+**Corrected by hand:** `acknowledge` returned a conflict on a second call. An assigned worker will tap
+that link twice, from two devices, halfway through a night shift. Made it idempotent: the second call is
 accepted and changes nothing.
 
 **Tests failed:** none initially, because the agent wrote tests matching its own implementation.
 That is itself the finding. The tests were rewritten from the acceptance criteria first, and the two
 issues above surfaced immediately.
 
-**Verified:** `pnpm --filter @guardianlink/api test:unit`, 33 tests in `incident.spec.ts`.
+**Verified:** `pnpm --filter @agricore/api test:unit`, 33 tests in `alert.spec.ts`.
 
 ---
 

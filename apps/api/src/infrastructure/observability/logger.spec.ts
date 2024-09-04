@@ -24,11 +24,11 @@ describe('redact', () => {
 
   it('reaches into nested objects', () => {
     const output = redact({
-      incident: { id: 'incident-1', lastKnownLocation: { latitude: 1, longitude: 2 } },
+      alert: { id: 'alert-1', lastKnownLocation: { latitude: 1, longitude: 2 } },
     }) as Record<string, Record<string, Record<string, unknown>>>;
 
-    expect(output['incident']?.['id']).toBe('incident-1');
-    expect(output['incident']?.['lastKnownLocation']?.['latitude']).toBe('[redacted]');
+    expect(output['alert']?.['id']).toBe('alert-1');
+    expect(output['alert']?.['lastKnownLocation']?.['latitude']).toBe('[redacted]');
   });
 
   it('reaches into arrays', () => {
@@ -39,10 +39,10 @@ describe('redact', () => {
   });
 
   it('matches suffixes, so refreshToken and accessToken both go', () => {
-    expect(redact({ refreshToken: 'x', accessToken: 'y', contactViewToken: 'z' })).toEqual({
+    expect(redact({ refreshToken: 'x', accessToken: 'y', workerViewToken: 'z' })).toEqual({
       refreshToken: '[redacted]',
       accessToken: '[redacted]',
-      contactViewToken: '[redacted]',
+      workerViewToken: '[redacted]',
     });
   });
 
@@ -54,9 +54,9 @@ describe('redact', () => {
   });
 
   it('keeps identifiers, which are what makes a log useful', () => {
-    expect(redact({ userId: 'u1', incidentId: 'i1', correlationId: 'c1' })).toEqual({
+    expect(redact({ userId: 'u1', alertId: 'i1', correlationId: 'c1' })).toEqual({
       userId: 'u1',
-      incidentId: 'i1',
+      alertId: 'i1',
       correlationId: 'c1',
     });
   });

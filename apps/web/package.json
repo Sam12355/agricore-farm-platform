@@ -1,8 +1,8 @@
 {
-  "name": "@guardianlink/web",
+  "name": "@agricore/web",
   "version": "0.1.0",
   "private": true,
-  "description": "GuardianLink user portal and operator console.",
+  "description": "AgriCore user portal and manager console.",
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "next build",
@@ -13,9 +13,9 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@guardianlink/contracts": "workspace:*",
-    "@guardianlink/design-tokens": "workspace:*",
-    "@guardianlink/shared-types": "workspace:*",
+    "@agricore/contracts": "workspace:*",
+    "@agricore/design-tokens": "workspace:*",
+    "@agricore/shared-types": "workspace:*",
     "next": "^15.1.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

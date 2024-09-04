@@ -24,10 +24,10 @@ import {
  */
 
 const BANNER_LINES = [
-  'GuardianLink design tokens.',
+  'AgriCore design tokens.',
   '',
   'Generated from packages/design-tokens/src/tokens.ts.',
-  'Do not edit by hand: run `pnpm --filter @guardianlink/design-tokens build` instead.',
+  'Do not edit by hand: run `pnpm --filter @agricore/design-tokens build` instead.',
 ];
 
 function comment(lines: string[], prefix: string): string {
@@ -43,25 +43,25 @@ function write(relativePath: string, contents: string): void {
 
 function cssBlock(mode: 'light' | 'dark'): string {
   return Object.entries(color)
-    .map(([name, token]) => `  --gl-color-${name}: ${token[mode]};`)
+    .map(([name, token]) => `  --ac-color-${name}: ${token[mode]};`)
     .join('\n');
 }
 
 function generateCss(): string {
   const scalars = [
-    ...Object.entries(space).map(([k, v]) => `  --gl-space-${k}: ${v};`),
-    ...Object.entries(fontSize).map(([k, v]) => `  --gl-font-size-${k}: ${v};`),
-    ...Object.entries(lineHeight).map(([k, v]) => `  --gl-line-height-${k}: ${v};`),
-    ...Object.entries(fontWeight).map(([k, v]) => `  --gl-font-weight-${k}: ${v};`),
-    ...Object.entries(fontFamily).map(([k, v]) => `  --gl-font-family-${k}: ${v};`),
-    ...Object.entries(radius).map(([k, v]) => `  --gl-radius-${k}: ${v};`),
-    ...Object.entries(shadow).map(([k, v]) => `  --gl-shadow-${k}: ${v};`),
-    ...Object.entries(duration).map(([k, v]) => `  --gl-duration-${k}: ${v};`),
-    `  --gl-min-touch-target: ${MIN_TOUCH_TARGET_PX}px;`,
+    ...Object.entries(space).map(([k, v]) => `  --ac-space-${k}: ${v};`),
+    ...Object.entries(fontSize).map(([k, v]) => `  --ac-font-size-${k}: ${v};`),
+    ...Object.entries(lineHeight).map(([k, v]) => `  --ac-line-height-${k}: ${v};`),
+    ...Object.entries(fontWeight).map(([k, v]) => `  --ac-font-weight-${k}: ${v};`),
+    ...Object.entries(fontFamily).map(([k, v]) => `  --ac-font-family-${k}: ${v};`),
+    ...Object.entries(radius).map(([k, v]) => `  --ac-radius-${k}: ${v};`),
+    ...Object.entries(shadow).map(([k, v]) => `  --ac-shadow-${k}: ${v};`),
+    ...Object.entries(duration).map(([k, v]) => `  --ac-duration-${k}: ${v};`),
+    `  --ac-min-touch-target: ${MIN_TOUCH_TARGET_PX}px;`,
   ].join('\n');
 
   const breakpoints = Object.entries(breakpoint)
-    .map(([k, v]) => `  --gl-breakpoint-${k}: ${v};`)
+    .map(([k, v]) => `  --ac-breakpoint-${k}: ${v};`)
     .join('\n');
 
   const banner = ['/*', ...BANNER_LINES.map((line) => (line ? ` * ${line}` : ' *')), ' */'].join(
@@ -92,15 +92,15 @@ ${cssBlock('light')}
 }
 
 /*
- * Honour the operating-system reduced-motion setting. The console animates incident
+ * Honour the operating-system reduced-motion setting. The console animates alert
  * rows as they arrive; for someone who has asked for less motion that is not a nice
  * touch, it is a problem.
  */
 @media (prefers-reduced-motion: reduce) {
   :root {
-    --gl-duration-instant: 0ms;
-    --gl-duration-fast: 0ms;
-    --gl-duration-normal: 0ms;
+    --ac-duration-instant: 0ms;
+    --ac-duration-fast: 0ms;
+    --ac-duration-normal: 0ms;
   }
 }
 `;
@@ -139,15 +139,15 @@ function generateSwift(): string {
 
 import UIKit
 
-public enum GLColor {
+public enum ACColor {
 ${entries}
 }
 
-public enum GLSpacing {
+public enum ACSpacing {
 ${spacing}
 }
 
-public enum GLLayout {
+public enum ACLayout {
     /// Minimum hit area, from the WCAG 2.2 target-size guidance.
     public static let minTouchTarget: CGFloat = ${MIN_TOUCH_TARGET_PX}
 }
@@ -173,24 +173,24 @@ function generateKotlin(): string {
 
   return `${comment(BANNER_LINES, '//')}
 
-package com.guardianlink.designtokens
+package com.agricore.designtokens
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
-object GLColorLight {
+object ACColorLight {
 ${light}
 }
 
-object GLColorDark {
+object ACColorDark {
 ${dark}
 }
 
-object GLSpacing {
+object ACSpacing {
 ${spacing}
 }
 
-object GLLayout {
+object ACLayout {
     /** Minimum hit area, from the WCAG 2.2 target-size guidance. */
     val minTouchTarget = ${MIN_TOUCH_TARGET_PX}.dp
 }
@@ -219,8 +219,8 @@ function generateJson(): string {
 
 function main(): void {
   write('generated/tokens.css', generateCss());
-  write('generated/GLTokens.swift', generateSwift());
-  write('generated/GLTokens.kt', generateKotlin());
+  write('generated/ACTokens.swift', generateSwift());
+  write('generated/ACTokens.kt', generateKotlin());
   write('generated/tokens.json', generateJson());
 }
 

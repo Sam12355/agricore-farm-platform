@@ -54,7 +54,7 @@ environment runs MongoDB in a container on the same task and only production use
 Gateway costs more than the compute it serves, so dev uses VPC endpoints for S3 and SQS and no NAT at
 all. Those two changes take dev to roughly 60 USD.
 
-Everything is tagged `Project=guardianlink` and `Environment=<env>` so a cost report can attribute it,
+Everything is tagged `Project=agricore` and `Environment=<env>` so a cost report can attribute it,
 and dev has a scheduled scale-to-zero outside working hours.
 
 ## Remote state
@@ -96,7 +96,7 @@ back code is safe because the schema still supports it.
 3. Do **not** roll the migration back. Additive migrations are forward-compatible; reversing one
    while traffic is being served is how data gets lost. If the schema genuinely has to change back,
    that is a new forward migration.
-4. Record what happened in the incident log
+4. Record what happened in the alert log
 
 ## Backup and restore
 
@@ -125,7 +125,7 @@ it. A backup nobody has restored is a hypothesis.
 | DLQ depth | above 0 | A notification was permanently lost |
 | RDS connections | above 80 percent of max | Pool exhaustion approaching |
 | RDS free storage | below 20 percent | Predictable and preventable |
-| Incident activation errors | any 5xx on the activation route | The one path that must not fail |
+| Alert activation errors | any 5xx on the activation route | The one path that must not fail |
 
 Structured logs go to CloudWatch with the correlation id as a searchable field. Metric filters count
 activations, deliveries and dead-letters, so the dashboard shows product behaviour and not only CPU.

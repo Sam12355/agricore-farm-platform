@@ -5,31 +5,31 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { PubSub } from 'graphql-subscriptions';
 import { join } from 'node:path';
 
-import { SystemClock, type Clock } from '@guardianlink/shared-types';
+import { SystemClock, type Clock } from '@agricore/shared-types';
 
-import { ContactViewService } from './application/services/contact-view.service';
+import { WorkerViewService } from './application/services/worker-view.service';
 import { IdentityService } from './application/services/identity.service';
-import { IncidentService } from './application/services/incident.service';
+import { AlertService } from './application/services/alert.service';
 import { NotificationDispatchService } from './application/services/notification-dispatch.service';
 import { PrivacyService } from './application/services/privacy.service';
-import { SafetySessionService } from './application/services/safety-session.service';
-import { SosService } from './application/services/sos.service';
+import { FieldOperationService } from './application/services/field-operation.service';
+import { AlertTriggerService } from './application/services/alert-trigger.service';
 import { SubscriptionService } from './application/services/subscription.service';
-import { TrustedContactService } from './application/services/trusted-contact.service';
+import { WorkerService } from './application/services/worker.service';
 import { PORTS } from './application/tokens';
 import { loadConfig, type AppConfig } from './config/configuration';
 import { AdminController, SubscriptionController } from './infrastructure/http/controllers/admin.controller';
 import { AuthController } from './infrastructure/http/controllers/auth.controller';
 import {
-  ContactViewController,
+  WorkerViewController,
   OpsController,
 } from './infrastructure/http/controllers/public.controller';
-import { IncidentController } from './infrastructure/http/controllers/incident.controller';
-import { SosController } from './infrastructure/http/controllers/sos.controller';
+import { AlertController } from './infrastructure/http/controllers/alert.controller';
+import { AlertTriggerController } from './infrastructure/http/controllers/alert-trigger.controller';
 import {
   PrivacyController,
-  SafetySessionController,
-  TrustedContactController,
+  FieldOperationController,
+  WorkerController,
 } from './infrastructure/http/controllers/user.controller';
 import { IdempotencyInterceptor } from './infrastructure/http/idempotency.interceptor';
 import {
@@ -44,18 +44,18 @@ import {
   MemoryAuditRepository,
   MemoryCountdownRepository,
   MemoryIdempotencyStore,
-  MemoryIncidentRepository,
+  MemoryAlertRepository,
   MemoryLocationTelemetryRepository,
   MemoryNotificationRepository,
   MemoryOutboxRepository,
   MemoryPrivacySettingsRepository,
   MemoryRefreshTokenRepository,
-  MemorySafetySessionRepository,
+  MemoryFieldOperationRepository,
   MemorySubscriptionRepository,
-  MemoryTrustedContactRepository,
+  MemoryWorkerRepository,
   MemoryUserRepository,
 } from './infrastructure/persistence/memory/memory-repositories';
-import { GraphQlEventBridge, IncidentResolver, PUB_SUB } from './infrastructure/graphql/incident.resolver';
+import { GraphQlEventBridge, AlertResolver, PUB_SUB } from './infrastructure/graphql/alert.resolver';
 import { RealtimeGateway } from './infrastructure/realtime/realtime.gateway';
 import { ScryptPasswordHasher } from './infrastructure/security/password-hasher';
 import { JwtTokenService } from './infrastructure/security/token.service';
@@ -93,7 +93,7 @@ function buildProviders(config: AppConfig): Provider[] {
   });
 
   const outbox = new MemoryOutboxRepository();
-  const incidents = new MemoryIncidentRepository(outbox);
+  const alerts = new MemoryAlertRepository(outbox);
 
   return [
     { provide: APP_CONFIG, useValue: config },
@@ -103,10 +103,10 @@ function buildProviders(config: AppConfig): Provider[] {
 
     { provide: PORTS.UserRepository, useValue: new MemoryUserRepository() },
     { provide: PORTS.RefreshTokenRepository, useValue: new MemoryRefreshTokenRepository() },
-    { provide: PORTS.TrustedContactRepository, useValue: new MemoryTrustedContactRepository() },
-    { provide: PORTS.SafetySessionRepository, useValue: new MemorySafetySessionRepository() },
+    { provide: PORTS.WorkerRepository, useValue: new MemoryWorkerRepository() },
+    { provide: PORTS.FieldOperationRepository, useValue: new MemoryFieldOperationRepository() },
     { provide: PORTS.CountdownRepository, useValue: new MemoryCountdownRepository() },
-    { provide: PORTS.IncidentRepository, useValue: incidents },
+    { provide: PORTS.AlertRepository, useValue: alerts },
     { provide: PORTS.OutboxRepository, useValue: outbox },
     {
       provide: PORTS.LocationTelemetryRepository,
@@ -132,7 +132,7 @@ function buildProviders(config: AppConfig): Provider[] {
       useValue: new JwtTokenService({
         accessSecret: config.JWT_ACCESS_SECRET,
         refreshSecret: config.JWT_REFRESH_SECRET,
-        contactViewSecret: config.JWT_CONTACT_VIEW_SECRET,
+        workerViewSecret: config.JWT_WORKER_VIEW_SECRET,
         issuer: config.JWT_ISSUER,
         audience: config.JWT_AUDIENCE,
         accessTtlSeconds: config.ACCESS_TOKEN_TTL_SECONDS,
@@ -159,14 +159,14 @@ function buildProviders(config: AppConfig): Provider[] {
     // deployment this becomes a Redis-backed PubSub, which is the same interface.
     { provide: PUB_SUB, useValue: new PubSub() },
     { provide: GraphQlEventBridge, useFactory: (pubSub: PubSub) => new GraphQlEventBridge(pubSub), inject: [PUB_SUB] },
-    IncidentResolver,
+    AlertResolver,
 
     IdentityService,
-    TrustedContactService,
-    SafetySessionService,
-    SosService,
-    IncidentService,
-    ContactViewService,
+    WorkerService,
+    FieldOperationService,
+    AlertTriggerService,
+    AlertService,
+    WorkerViewService,
     PrivacyService,
     NotificationDispatchService,
     SubscriptionService,
@@ -187,11 +187,11 @@ export class AppModule implements NestModule {
       module: AppModule,
       controllers: [
         AuthController,
-        TrustedContactController,
-        SafetySessionController,
-        SosController,
-        IncidentController,
-        ContactViewController,
+        WorkerController,
+        FieldOperationController,
+        AlertTriggerController,
+        AlertController,
+        WorkerViewController,
         PrivacyController,
         SubscriptionController,
         AdminController,

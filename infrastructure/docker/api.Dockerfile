@@ -1,4 +1,4 @@
-# GuardianLink API image.
+# AgriCore API image.
 #
 # Multi-stage, so the runtime image carries no compiler, no source and no dev
 # dependencies. The result is a smaller image and, more usefully, a much smaller set of
@@ -30,7 +30,7 @@ COPY apps/api/ apps/api/
 COPY tsconfig.base.json ./
 
 RUN pnpm --filter "./packages/**" -r build \
- && pnpm --filter @guardianlink/api build \
+ && pnpm --filter @agricore/api build \
  && pnpm prune --prod
 
 # ---- Stage 3: runtime --------------------------------------------------------------
@@ -57,7 +57,7 @@ EXPOSE 3001
 
 # The container healthcheck hits liveness, not readiness. Readiness is the load
 # balancer's question; restarting a task because its database blipped turns a
-# recoverable incident into an outage.
+# recoverable failure into an outage.
 HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \
   CMD node -e "require('http').get('http://127.0.0.1:3001/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
 

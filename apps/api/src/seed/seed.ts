@@ -2,15 +2,15 @@ import 'reflect-metadata';
 
 import { NestFactory } from '@nestjs/core';
 
-import { ALL_SCENARIO_KINDS, DEMO_ACCOUNTS, buildScenario } from '@guardianlink/test-fixtures';
+import { ALL_SCENARIO_KINDS, DEMO_ACCOUNTS, buildScenario } from '@agricore/test-fixtures';
 
 import { AppModule } from '../app.module';
 import { PORTS } from '../application/tokens';
 import { IdentityService } from '../application/services/identity.service';
-import { IncidentService } from '../application/services/incident.service';
+import { AlertService } from '../application/services/alert.service';
 import { NotificationDispatchService } from '../application/services/notification-dispatch.service';
-import { SosService } from '../application/services/sos.service';
-import { TrustedContactService } from '../application/services/trusted-contact.service';
+import { AlertTriggerService } from '../application/services/alert-trigger.service';
+import { WorkerService } from '../application/services/worker.service';
 import { developmentConfig } from '../config/configuration';
 import type { UserRepository } from '../application/ports';
 
@@ -32,9 +32,9 @@ async function main(): Promise<void> {
   );
 
   const identity = app.get(IdentityService);
-  const contacts = app.get(TrustedContactService);
-  const sos = app.get(SosService);
-  const incidents = app.get(IncidentService);
+  const workers = app.get(WorkerService);
+  const alert = app.get(AlertTriggerService);
+  const alerts = app.get(AlertService);
   const dispatch = app.get(NotificationDispatchService);
   const users = app.get<UserRepository>(PORTS.UserRepository);
 
@@ -81,23 +81,23 @@ async function main(): Promise<void> {
     const scenario = buildScenario(kind);
     console.log(`\n  ${kind}: ${scenario.title}`);
 
-    // Fresh contacts per scenario so each one is self-contained and a reviewer can run
+    // Fresh workers per scenario so each one is self-contained and a reviewer can run
     // any single scenario without the others having run first.
-    const contactIds: string[] = [];
-    for (const contact of scenario.contacts) {
-      const created = await contacts.create(subject.userId, {
-        name: contact.displayName,
-        phone: contact.phone,
-        email: contact.email,
-        relationship: contact.relationship,
-        priority: contact.priority,
+    const workerIds: string[] = [];
+    for (const worker of scenario.workers) {
+      const created = await workers.create(subject.userId, {
+        name: worker.displayName,
+        phone: worker.phone,
+        email: worker.email,
+        jobRole: worker.jobRole,
+        priority: worker.priority,
         preferredChannel: 'any',
         canViewLiveLocation: true,
       });
-      if (created.ok) contactIds.push(created.value.id);
+      if (created.ok) workerIds.push(created.value.id);
     }
 
-    const countdown = await sos.startCountdown(subject.userId, {
+    const countdown = await alert.startCountdown(subject.userId, {
       durationSeconds: 10,
       activationIdempotencyKey: `seed-${kind}-${Date.now()}`,
     });
@@ -107,22 +107,22 @@ async function main(): Promise<void> {
     }
 
     if (kind === 'cancelled_countdown') {
-      const cancelled = await sos.cancelCountdown(
+      const cancelled = await alert.cancelCountdown(
         subject.userId,
         countdown.value.id,
         'false_trigger',
       );
-      console.log(`    cancelled: ${cancelled.ok}. No incident created, which is the point.`);
+      console.log(`    cancelled: ${cancelled.ok}. No alert created, which is the point.`);
       continue;
     }
 
-    const activated = await sos.activate(
+    const activated = await alert.activate(
       {
         userId: subject.userId,
         correlationId: `seed-${kind}`,
         idempotencyKey: countdown.value.activationIdempotencyKey,
       },
-      { countdownId: countdown.value.id, trigger: 'sos_countdown' },
+      { countdownId: countdown.value.id, trigger: 'field_countdown' },
     );
 
     if (!activated.ok) {
@@ -130,32 +130,32 @@ async function main(): Promise<void> {
       continue;
     }
 
-    const incidentId = activated.value.incident.id;
-    console.log(`    incident ${incidentId}`);
+    const alertId = activated.value.alert.id;
+    console.log(`    alert ${alertId}`);
 
-    // The retry-storm scenario exists to show that five attempts produce one incident.
+    // The retry-storm scenario exists to show that five attempts produce one alert.
     if (kind === 'duplicate_activation') {
       for (let attempt = 0; attempt < 4; attempt += 1) {
-        const repeat = await sos.activate(
+        const repeat = await alert.activate(
           {
             userId: subject.userId,
             correlationId: `seed-${kind}-retry-${attempt}`,
             idempotencyKey: countdown.value.activationIdempotencyKey,
           },
-          { countdownId: countdown.value.id, trigger: 'sos_countdown' },
+          { countdownId: countdown.value.id, trigger: 'field_countdown' },
         );
         if (repeat.ok && !repeat.value.deduplicated) {
-          throw new Error('Retry created a second incident. That is a bug, not a seed problem.');
+          throw new Error('Retry created a second alert. That is a bug, not a seed problem.');
         }
       }
-      console.log('    four retries, all deduplicated to the same incident');
+      console.log('    four retries, all deduplicated to the same alert');
     }
 
     if (scenario.track.length > 0) {
       const batches = chunk(scenario.track, 25);
       for (const batch of batches) {
-        await incidents.recordLocation(
-          incidentId,
+        await alerts.recordLocation(
+          alertId,
           { userId: subject.userId, role: 'user' },
           {
             points: batch.map((point) => ({
@@ -174,14 +174,14 @@ async function main(): Promise<void> {
     console.log(`    notifications: ${drained.processed} sent, ${drained.failed} failed`);
 
     if (kind === 'clean_resolution') {
-      const current = await incidents.get(incidentId, { userId: subject.userId, role: 'user' });
+      const current = await alerts.get(alertId, { userId: subject.userId, role: 'user' });
       if (current.ok) {
-        await incidents.resolve(
-          incidentId,
+        await alerts.resolve(
+          alertId,
           { userId: subject.userId, role: 'user' },
           {
-            resolution: 'user_safe',
-            note: 'Home safe.',
+            resolution: 'issue_cleared',
+            note: 'Blockage cleared, pass finished.',
             expectedVersion: current.value.version,
           },
         );
@@ -192,7 +192,7 @@ async function main(): Promise<void> {
 
   console.log('\nDone.');
   console.log('Sign in with any account from docs/DEMO.md.');
-  console.log('Passphrase: guardianlink-demo-passphrase');
+  console.log('Passphrase: agricore-demo-passphrase');
   console.log('\nEvery name, number and coordinate above is synthetic. See PRIVACY.md.');
 
   await app.close();

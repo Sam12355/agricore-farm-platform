@@ -1,7 +1,7 @@
 import request from 'supertest';
 import type { App } from 'supertest/types';
 
-import { DEMO_PASSWORD } from '@guardianlink/test-fixtures';
+import { DEMO_PASSWORD } from '@agricore/test-fixtures';
 
 import { PORTS } from '../../src/application/tokens';
 import { PrivacyService } from '../../src/application/services/privacy.service';
@@ -34,12 +34,12 @@ async function register(email: string) {
 
 async function activate(token: string, key: string) {
   const response = await request(http)
-    .post(`${BASE}/sos/activate`)
+    .post(`${BASE}/alerts/activate`)
     .set('Authorization', `Bearer ${token}`)
     .set('Idempotency-Key', key)
-    .send({ trigger: 'manual_panic' })
+    .send({ trigger: 'manual_report' })
     .expect(201);
-  return response.body.incident.id as string;
+  return response.body.alert.id as string;
 }
 
 beforeEach(async () => {
@@ -52,25 +52,25 @@ afterEach(async () => {
 });
 
 describe('resource-level authorisation', () => {
-  it('does not let one user read another user incident', async () => {
+  it('does not let one user read another user alert', async () => {
     const owner = await register('owner@example.com');
     const stranger = await register('stranger@example.com');
-    const incidentId = await activate(owner.accessToken, 'owner-key-000000001');
+    const alertId = await activate(owner.accessToken, 'owner-key-000000001');
 
-    // 404, not 403. A 403 would confirm that this incident id exists.
+    // 404, not 403. A 403 would confirm that this alert id exists.
     await request(http)
-      .get(`${BASE}/incidents/${incidentId}`)
+      .get(`${BASE}/alerts/${alertId}`)
       .set('Authorization', `Bearer ${stranger.accessToken}`)
       .expect(404);
   });
 
-  it('does not let one user post location onto another user incident', async () => {
+  it('does not let one user post location onto another user alert', async () => {
     const owner = await register('owner2@example.com');
     const stranger = await register('stranger2@example.com');
-    const incidentId = await activate(owner.accessToken, 'owner-key-000000002');
+    const alertId = await activate(owner.accessToken, 'owner-key-000000002');
 
     await request(http)
-      .post(`${BASE}/incidents/${incidentId}/location`)
+      .post(`${BASE}/alerts/${alertId}/location`)
       .set('Authorization', `Bearer ${stranger.accessToken}`)
       .send({
         points: [
@@ -80,68 +80,68 @@ describe('resource-level authorisation', () => {
       .expect(403);
   });
 
-  it('keeps one user trusted contacts out of another user list', async () => {
+  it('keeps one user assigned workers out of another user list', async () => {
     const owner = await register('owner3@example.com');
     const stranger = await register('stranger3@example.com');
 
     const created = await request(http)
-      .post(`${BASE}/trusted-contacts`)
+      .post(`${BASE}/workers`)
       .set('Authorization', `Bearer ${owner.accessToken}`)
-      .send({ name: 'Private Contact', phone: '+1 555 0110' })
+      .send({ name: 'Private Worker', phone: '+1 555 0110' })
       .expect(201);
 
     const strangerList = await request(http)
-      .get(`${BASE}/trusted-contacts`)
+      .get(`${BASE}/workers`)
       .set('Authorization', `Bearer ${stranger.accessToken}`)
       .expect(200);
     expect(strangerList.body.items).toHaveLength(0);
 
     await request(http)
-      .patch(`${BASE}/trusted-contacts/${created.body.id}`)
+      .patch(`${BASE}/workers/${created.body.id}`)
       .set('Authorization', `Bearer ${stranger.accessToken}`)
       .send({ name: 'Hijacked' })
       .expect(404);
 
     await request(http)
-      .delete(`${BASE}/trusted-contacts/${created.body.id}`)
+      .delete(`${BASE}/workers/${created.body.id}`)
       .set('Authorization', `Bearer ${stranger.accessToken}`)
       .expect(404);
   });
 
-  it('scopes the incident list to the caller', async () => {
+  it('scopes the alert list to the caller', async () => {
     const owner = await register('owner4@example.com');
     const stranger = await register('stranger4@example.com');
     await activate(owner.accessToken, 'owner-key-000000004');
 
     const list = await request(http)
-      .get(`${BASE}/incidents`)
+      .get(`${BASE}/alerts`)
       .set('Authorization', `Bearer ${stranger.accessToken}`)
       .expect(200);
 
     expect(list.body.items).toHaveLength(0);
   });
 
-  it('refuses operator-only actions to an ordinary user', async () => {
+  it('refuses manager-only actions to an ordinary user', async () => {
     const owner = await register('owner5@example.com');
-    const incidentId = await activate(owner.accessToken, 'owner-key-000000005');
+    const alertId = await activate(owner.accessToken, 'owner-key-000000005');
 
-    // Even on their own incident. Claiming is an operator concept.
+    // Even on their own alert. Claiming is a manager concept.
     await request(http)
-      .post(`${BASE}/incidents/${incidentId}/claim`)
+      .post(`${BASE}/alerts/${alertId}/claim`)
       .set('Authorization', `Bearer ${owner.accessToken}`)
       .send({ expectedVersion: 0 })
       .expect(403);
 
     await request(http)
-      .post(`${BASE}/incidents/${incidentId}/priority`)
+      .post(`${BASE}/alerts/${alertId}/priority`)
       .set('Authorization', `Bearer ${owner.accessToken}`)
       .send({ priority: 'critical', expectedVersion: 0 })
       .expect(403);
   });
 
   it('rejects a request with no credentials at all', async () => {
-    await request(http).get(`${BASE}/incidents`).expect(401);
-    await request(http).get(`${BASE}/trusted-contacts`).expect(401);
+    await request(http).get(`${BASE}/alerts`).expect(401);
+    await request(http).get(`${BASE}/workers`).expect(401);
     await request(http).get(`${BASE}/privacy/settings`).expect(401);
   });
 
@@ -150,7 +150,7 @@ describe('resource-level authorisation', () => {
     const tampered = `${owner.accessToken.slice(0, -4)}AAAA`;
 
     await request(http)
-      .get(`${BASE}/incidents`)
+      .get(`${BASE}/alerts`)
       .set('Authorization', `Bearer ${tampered}`)
       .expect(401);
   });
@@ -159,16 +159,16 @@ describe('resource-level authorisation', () => {
 describe('optimistic concurrency', () => {
   it('rejects a mutation that carries a stale version and reports the current one', async () => {
     const owner = await register('concurrent@example.com');
-    const incidentId = await activate(owner.accessToken, 'concurrent-key-00001');
+    const alertId = await activate(owner.accessToken, 'concurrent-key-00001');
 
     const before = await request(http)
-      .get(`${BASE}/incidents/${incidentId}`)
+      .get(`${BASE}/alerts/${alertId}`)
       .set('Authorization', `Bearer ${owner.accessToken}`)
       .expect(200);
 
-    // Something else moves the incident forward.
+    // Something else moves the alert forward.
     await request(http)
-      .post(`${BASE}/incidents/${incidentId}/location`)
+      .post(`${BASE}/alerts/${alertId}/location`)
       .set('Authorization', `Bearer ${owner.accessToken}`)
       .send({
         points: [
@@ -178,9 +178,9 @@ describe('optimistic concurrency', () => {
       .expect(202);
 
     const stale = await request(http)
-      .post(`${BASE}/incidents/${incidentId}/resolve`)
+      .post(`${BASE}/alerts/${alertId}/resolve`)
       .set('Authorization', `Bearer ${owner.accessToken}`)
-      .send({ resolution: 'user_safe', expectedVersion: before.body.version })
+      .send({ resolution: 'issue_cleared', expectedVersion: before.body.version })
       .expect(409);
 
     expect(stale.body.error.code).toBe('STALE_VERSION');
@@ -279,9 +279,9 @@ describe('privacy', () => {
     await activate(stranger.accessToken, 'export-key-000000002');
 
     await request(http)
-      .post(`${BASE}/trusted-contacts`)
+      .post(`${BASE}/workers`)
       .set('Authorization', `Bearer ${owner.accessToken}`)
-      .send({ name: 'Owner Contact', phone: '+1 555 0111' })
+      .send({ name: 'Owner Worker', phone: '+1 555 0111' })
       .expect(201);
 
     const exported = await request(http)
@@ -298,8 +298,8 @@ describe('privacy', () => {
 
     const document = JSON.parse(raw ?? '{}');
     expect(document.account.id).toBe(owner.userId);
-    expect(document.trustedContacts).toHaveLength(1);
-    expect(document.incidents).toHaveLength(1);
+    expect(document.workers).toHaveLength(1);
+    expect(document.alerts).toHaveLength(1);
     // Nothing belonging to the other account leaked in.
     expect(JSON.stringify(document)).not.toContain(stranger.userId);
   });
@@ -350,9 +350,9 @@ describe('privacy', () => {
     await activate(owner.accessToken, 'erase-key-000000001');
 
     await request(http)
-      .post(`${BASE}/trusted-contacts`)
+      .post(`${BASE}/workers`)
       .set('Authorization', `Bearer ${owner.accessToken}`)
-      .send({ name: 'Contact To Erase', phone: '+1 555 0112' })
+      .send({ name: 'Worker To Erase', phone: '+1 555 0112' })
       .expect(201);
 
     const privacy = harness.module.get(PrivacyService);
@@ -417,7 +417,7 @@ describe('operational endpoints', () => {
     expect(response.body.status).toBe('ready');
     expect(response.body.checks.map((check: { name: string }) => check.name)).toEqual([
       'users',
-      'incidents',
+      'alerts',
       'outbox',
     ]);
   });

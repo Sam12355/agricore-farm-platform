@@ -1,9 +1,9 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "GuardianLink API",
+    "title": "AgriCore API",
     "version": "0.1.0",
-    "description": "GuardianLink is a portfolio demonstration built to show engineering work. It is not a real safety service, it does not contact emergency services, and no real person is monitoring it. In a genuine emergency, contact your local emergency number.\n\nEvery schema in this document is generated from the Zod schemas in packages/contracts, which are the same definitions the server validates against.",
+    "description": "AgriCore is a portfolio demonstration built to show engineering work. It is not a working farm operations service, no real sensor, machine or field is connected to it, and nobody is monitoring the alerts it raises. Do not use it to run an actual farm.\n\nEvery schema in this document is generated from the Zod schemas in packages/contracts, which are the same definitions the server validates against.",
     "license": {
       "name": "MIT"
     }
@@ -20,28 +20,28 @@
       "description": "Registration, sign-in, token rotation"
     },
     {
-      "name": "Trusted contacts",
-      "description": "The people notified during an incident"
+      "name": "Assigned workers",
+      "description": "The people notified during an alert"
     },
     {
-      "name": "Safety sessions",
+      "name": "Field operations",
       "description": "Planned journeys with an expected end time"
     },
     {
-      "name": "SOS",
+      "name": "Alerts",
       "description": "Countdown, cancellation and activation"
     },
     {
-      "name": "Incidents",
+      "name": "Alerts",
       "description": "Timeline, location and resolution"
     },
     {
-      "name": "Operator",
-      "description": "Claim, notes and priority. Operators only"
+      "name": "Manager",
+      "description": "Claim, notes and priority. Managers only"
     },
     {
-      "name": "Trusted contact",
-      "description": "The credential-free contact view"
+      "name": "Assigned worker",
+      "description": "The credential-free worker view"
     },
     {
       "name": "Privacy",
@@ -156,7 +156,7 @@
                 "type": "string",
                 "enum": [
                   "user",
-                  "operator",
+                  "manager",
                   "admin"
                 ]
               },
@@ -212,7 +212,7 @@
         ],
         "additionalProperties": false
       },
-      "CreateTrustedContact": {
+      "CreateWorker": {
         "type": "object",
         "properties": {
           "name": {
@@ -232,7 +232,7 @@
             "maxLength": 24,
             "pattern": "^[+()\\d\\s-]+$"
           },
-          "relationship": {
+          "jobRole": {
             "type": "string",
             "maxLength": 40
           },
@@ -262,7 +262,7 @@
         ],
         "additionalProperties": false
       },
-      "UpdateTrustedContact": {
+      "UpdateWorker": {
         "type": "object",
         "properties": {
           "name": {
@@ -288,7 +288,7 @@
             "maxLength": 24,
             "pattern": "^[+()\\d\\s-]+$"
           },
-          "relationship": {
+          "jobRole": {
             "type": [
               "string",
               "null"
@@ -315,7 +315,7 @@
         },
         "additionalProperties": false
       },
-      "TrustedContact": {
+      "Worker": {
         "type": "object",
         "properties": {
           "id": {
@@ -337,7 +337,7 @@
               "null"
             ]
           },
-          "relationship": {
+          "jobRole": {
             "type": [
               "string",
               "null"
@@ -382,7 +382,7 @@
           "name",
           "email",
           "phone",
-          "relationship",
+          "jobRole",
           "priority",
           "preferredChannel",
           "canViewLiveLocation",
@@ -392,7 +392,7 @@
         ],
         "additionalProperties": false
       },
-      "StartSafetySession": {
+      "StartFieldOperation": {
         "type": "object",
         "properties": {
           "expectedDurationMinutes": {
@@ -418,13 +418,13 @@
         ],
         "additionalProperties": false
       },
-      "EndSafetySession": {
+      "EndFieldOperation": {
         "type": "object",
         "properties": {
           "outcome": {
             "type": "string",
             "enum": [
-              "arrived_safely",
+              "finished",
               "cancelled"
             ]
           }
@@ -434,7 +434,7 @@
         ],
         "additionalProperties": false
       },
-      "SafetySession": {
+      "FieldOperation": {
         "type": "object",
         "properties": {
           "id": {
@@ -567,7 +567,7 @@
             "format": "date-time",
             "description": "ISO 8601 timestamp with offset, always UTC on the wire"
           },
-          "incidentId": {
+          "alertId": {
             "type": [
               "string",
               "null"
@@ -581,11 +581,11 @@
           "startedAt",
           "expiresAt",
           "cancelledAt",
-          "incidentId"
+          "alertId"
         ],
         "additionalProperties": false
       },
-      "ActivateIncident": {
+      "ActivateAlert": {
         "type": "object",
         "properties": {
           "countdownId": {
@@ -599,12 +599,12 @@
           "trigger": {
             "type": "string",
             "enum": [
-              "sos_countdown",
-              "manual_panic",
-              "session_overdue",
-              "operator_created"
+              "field_countdown",
+              "manual_report",
+              "operation_overdue",
+              "manager_created"
             ],
-            "default": "sos_countdown"
+            "default": "field_countdown"
           },
           "location": {
             "type": "object",
@@ -650,7 +650,7 @@
         },
         "additionalProperties": false
       },
-      "Incident": {
+      "Alert": {
         "type": "object",
         "properties": {
           "id": {
@@ -689,10 +689,10 @@
           "trigger": {
             "type": "string",
             "enum": [
-              "sos_countdown",
-              "manual_panic",
-              "session_overdue",
-              "operator_created"
+              "field_countdown",
+              "manual_report",
+              "operation_overdue",
+              "manager_created"
             ]
           },
           "activatedAt": {
@@ -715,7 +715,7 @@
             ],
             "format": "uuid"
           },
-          "claimedByOperatorId": {
+          "claimedByManagerId": {
             "type": [
               "string",
               "null"
@@ -790,7 +790,7 @@
           "activatedAt",
           "resolvedAt",
           "resolvedBy",
-          "claimedByOperatorId",
+          "claimedByManagerId",
           "claimedAt",
           "lastKnownLocation",
           "version",
@@ -799,10 +799,10 @@
         ],
         "additionalProperties": false
       },
-      "IncidentTimeline": {
+      "AlertTimeline": {
         "type": "object",
         "properties": {
-          "incident": {
+          "alert": {
             "type": "object",
             "properties": {
               "id": {
@@ -841,10 +841,10 @@
               "trigger": {
                 "type": "string",
                 "enum": [
-                  "sos_countdown",
-                  "manual_panic",
-                  "session_overdue",
-                  "operator_created"
+                  "field_countdown",
+                  "manual_report",
+                  "operation_overdue",
+                  "manager_created"
                 ]
               },
               "activatedAt": {
@@ -867,7 +867,7 @@
                 ],
                 "format": "uuid"
               },
-              "claimedByOperatorId": {
+              "claimedByManagerId": {
                 "type": [
                   "string",
                   "null"
@@ -942,7 +942,7 @@
               "activatedAt",
               "resolvedAt",
               "resolvedBy",
-              "claimedByOperatorId",
+              "claimedByManagerId",
               "claimedAt",
               "lastKnownLocation",
               "version",
@@ -960,7 +960,7 @@
                   "type": "string",
                   "format": "uuid"
                 },
-                "incidentId": {
+                "alertId": {
                   "type": "string",
                   "format": "uuid"
                 },
@@ -971,26 +971,26 @@
                 "type": {
                   "type": "string",
                   "enum": [
-                    "incident.activated",
-                    "incident.location_recorded",
-                    "incident.contact_notified",
-                    "incident.contact_acknowledged",
-                    "incident.notification_failed",
-                    "incident.operator_claimed",
-                    "incident.operator_released",
-                    "incident.operator_note_added",
-                    "incident.priority_changed",
-                    "incident.status_changed",
-                    "incident.resolved",
-                    "incident.cancelled"
+                    "alert.activated",
+                    "alert.location_recorded",
+                    "alert.worker_notified",
+                    "alert.worker_acknowledged",
+                    "alert.notification_failed",
+                    "alert.manager_claimed",
+                    "alert.manager_released",
+                    "alert.manager_note_added",
+                    "alert.priority_changed",
+                    "alert.status_changed",
+                    "alert.resolved",
+                    "alert.cancelled"
                   ]
                 },
                 "actorType": {
                   "type": "string",
                   "enum": [
                     "user",
-                    "operator",
-                    "contact",
+                    "manager",
+                    "worker",
                     "system"
                   ]
                 },
@@ -1018,7 +1018,7 @@
               },
               "required": [
                 "id",
-                "incidentId",
+                "alertId",
                 "sequence",
                 "type",
                 "actorType",
@@ -1036,7 +1036,7 @@
           }
         },
         "required": [
-          "incident",
+          "alert",
           "events",
           "latestSequence"
         ],
@@ -1112,7 +1112,7 @@
         ],
         "additionalProperties": false
       },
-      "ClaimIncident": {
+      "ClaimAlert": {
         "type": "object",
         "properties": {
           "expectedVersion": {
@@ -1125,7 +1125,7 @@
         ],
         "additionalProperties": false
       },
-      "AddOperatorNote": {
+      "AddManagerNote": {
         "type": "object",
         "properties": {
           "note": {
@@ -1171,13 +1171,13 @@
         ],
         "additionalProperties": false
       },
-      "ResolveIncident": {
+      "ResolveAlert": {
         "type": "object",
         "properties": {
           "resolution": {
             "type": "string",
             "enum": [
-              "user_safe",
+              "issue_cleared",
               "false_alarm",
               "handled_offline",
               "duplicate"
@@ -1198,10 +1198,10 @@
         ],
         "additionalProperties": false
       },
-      "ContactIncidentView": {
+      "WorkerAlertView": {
         "type": "object",
         "properties": {
-          "incidentId": {
+          "alertId": {
             "type": "string",
             "format": "uuid"
           },
@@ -1264,7 +1264,7 @@
           }
         },
         "required": [
-          "incidentId",
+          "alertId",
           "status",
           "subjectDisplayName",
           "activatedAt",
@@ -1274,7 +1274,7 @@
         ],
         "additionalProperties": false
       },
-      "AcknowledgeIncident": {
+      "AcknowledgeAlert": {
         "type": "object",
         "properties": {
           "note": {
@@ -1287,16 +1287,16 @@
       "PrivacySettings": {
         "type": "object",
         "properties": {
-          "shareLocationWithContacts": {
+          "shareLocationWithWorkers": {
             "type": "boolean"
           },
-          "shareLocationWithOperators": {
+          "shareLocationWithManagers": {
             "type": "boolean"
           },
           "storePreciseLocationHistory": {
             "type": "boolean"
           },
-          "incidentRetentionDays": {
+          "alertRetentionDays": {
             "type": "integer",
             "minimum": 30,
             "maximum": 1095
@@ -1321,10 +1321,10 @@
           }
         },
         "required": [
-          "shareLocationWithContacts",
-          "shareLocationWithOperators",
+          "shareLocationWithWorkers",
+          "shareLocationWithManagers",
           "storePreciseLocationHistory",
-          "incidentRetentionDays",
+          "alertRetentionDays",
           "locationRetentionDays",
           "notificationLogRetentionDays",
           "allowAnonymisedProductAnalytics",
@@ -1335,16 +1335,16 @@
       "UpdatePrivacySettings": {
         "type": "object",
         "properties": {
-          "shareLocationWithContacts": {
+          "shareLocationWithWorkers": {
             "type": "boolean"
           },
-          "shareLocationWithOperators": {
+          "shareLocationWithManagers": {
             "type": "boolean"
           },
           "storePreciseLocationHistory": {
             "type": "boolean"
           },
-          "incidentRetentionDays": {
+          "alertRetentionDays": {
             "type": "integer",
             "minimum": 30,
             "maximum": 1095
@@ -1501,7 +1501,7 @@
             "enum": [
               "free",
               "plus",
-              "family"
+              "team"
             ]
           },
           "status": {
@@ -1596,32 +1596,32 @@
             "enum": [
               "free",
               "plus",
-              "family"
+              "team"
             ]
           },
           "features": {
             "type": "object",
             "properties": {
-              "maxTrustedContacts": {
+              "maxWorkers": {
                 "type": "integer",
                 "minimum": 0
               },
               "liveLocationSharing": {
                 "type": "boolean"
               },
-              "extendedIncidentHistoryDays": {
+              "extendedAlertHistoryDays": {
                 "type": "integer",
                 "minimum": 0
               },
-              "priorityOperatorQueue": {
+              "priorityManagerQueue": {
                 "type": "boolean"
               }
             },
             "required": [
-              "maxTrustedContacts",
+              "maxWorkers",
               "liveLocationSharing",
-              "extendedIncidentHistoryDays",
-              "priorityOperatorQueue"
+              "extendedAlertHistoryDays",
+              "priorityManagerQueue"
             ],
             "additionalProperties": false
           }
@@ -1971,11 +1971,11 @@
         }
       }
     },
-    "/api/v1/trusted-contacts": {
+    "/api/v1/workers": {
       "get": {
-        "summary": "List trusted contacts",
+        "summary": "List assigned workers",
         "tags": [
-          "Trusted contacts"
+          "Assigned workers"
         ],
         "security": [
           {
@@ -1984,11 +1984,11 @@
         ],
         "responses": {
           "200": {
-            "description": "Contacts in priority order.",
+            "description": "Workers in priority order.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/TrustedContact"
+                  "$ref": "#/components/schemas/Worker"
                 }
               }
             }
@@ -2006,10 +2006,10 @@
         }
       },
       "post": {
-        "summary": "Add a trusted contact",
-        "description": "The contact cap is an entitlement and is enforced server side.",
+        "summary": "Add an assigned worker",
+        "description": "The worker cap is an entitlement and is enforced server side.",
         "tags": [
-          "Trusted contacts"
+          "Assigned workers"
         ],
         "security": [
           {
@@ -2021,18 +2021,18 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateTrustedContact"
+                "$ref": "#/components/schemas/CreateWorker"
               }
             }
           }
         },
         "responses": {
           "201": {
-            "description": "Contact added.",
+            "description": "Worker added.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/TrustedContact"
+                  "$ref": "#/components/schemas/Worker"
                 }
               }
             }
@@ -2058,7 +2058,7 @@
             }
           },
           "412": {
-            "description": "The plan does not allow another contact.",
+            "description": "The plan does not allow another worker.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2070,11 +2070,11 @@
         }
       }
     },
-    "/api/v1/trusted-contacts/{id}": {
+    "/api/v1/workers/{id}": {
       "patch": {
-        "summary": "Update a trusted contact",
+        "summary": "Update an assigned worker",
         "tags": [
-          "Trusted contacts"
+          "Assigned workers"
         ],
         "security": [
           {
@@ -2086,7 +2086,7 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "description": "Trusted contact identifier.",
+            "description": "Assigned worker identifier.",
             "schema": {
               "type": "string",
               "format": "uuid"
@@ -2098,7 +2098,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateTrustedContact"
+                "$ref": "#/components/schemas/UpdateWorker"
               }
             }
           }
@@ -2109,7 +2109,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/TrustedContact"
+                  "$ref": "#/components/schemas/Worker"
                 }
               }
             }
@@ -2127,10 +2127,10 @@
         }
       },
       "delete": {
-        "summary": "Remove a trusted contact",
-        "description": "Soft delete, so a past incident timeline still resolves the contact.",
+        "summary": "Remove an assigned worker",
+        "description": "Soft delete, so a past alert timeline still resolves the worker.",
         "tags": [
-          "Trusted contacts"
+          "Assigned workers"
         ],
         "security": [
           {
@@ -2142,7 +2142,7 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "description": "Trusted contact identifier.",
+            "description": "Assigned worker identifier.",
             "schema": {
               "type": "string",
               "format": "uuid"
@@ -2166,11 +2166,11 @@
         }
       }
     },
-    "/api/v1/safety-sessions": {
+    "/api/v1/field-operations": {
       "get": {
-        "summary": "List safety sessions",
+        "summary": "List field operations",
         "tags": [
-          "Safety sessions"
+          "Field operations"
         ],
         "security": [
           {
@@ -2183,7 +2183,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SafetySession"
+                  "$ref": "#/components/schemas/FieldOperation"
                 }
               }
             }
@@ -2191,10 +2191,10 @@
         }
       },
       "post": {
-        "summary": "Start a safety session",
+        "summary": "Start a field operation",
         "description": "One active session per user, enforced by a unique partial index.",
         "tags": [
-          "Safety sessions"
+          "Field operations"
         ],
         "security": [
           {
@@ -2206,7 +2206,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/StartSafetySession"
+                "$ref": "#/components/schemas/StartFieldOperation"
               }
             }
           }
@@ -2217,7 +2217,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SafetySession"
+                  "$ref": "#/components/schemas/FieldOperation"
                 }
               }
             }
@@ -2235,11 +2235,11 @@
         }
       }
     },
-    "/api/v1/safety-sessions/{id}/end": {
+    "/api/v1/field-operations/{id}/end": {
       "post": {
-        "summary": "End a safety session",
+        "summary": "End a field operation",
         "tags": [
-          "Safety sessions"
+          "Field operations"
         ],
         "security": [
           {
@@ -2263,7 +2263,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/EndSafetySession"
+                "$ref": "#/components/schemas/EndFieldOperation"
               }
             }
           }
@@ -2274,7 +2274,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SafetySession"
+                  "$ref": "#/components/schemas/FieldOperation"
                 }
               }
             }
@@ -2292,12 +2292,12 @@
         }
       }
     },
-    "/api/v1/sos/countdown": {
+    "/api/v1/alerts/countdown": {
       "post": {
-        "summary": "Start an SOS countdown",
+        "summary": "Start an Alert countdown",
         "description": "The activation idempotency key is minted here rather than at activation, so a client that crashes mid-countdown still deduplicates when it restarts and retries.",
         "tags": [
-          "SOS"
+          "Alerts"
         ],
         "security": [
           {
@@ -2338,12 +2338,12 @@
         }
       }
     },
-    "/api/v1/sos/countdown/{id}/cancel": {
+    "/api/v1/alerts/countdown/{id}/cancel": {
       "post": {
         "summary": "Cancel a countdown",
-        "description": "Cancelling twice is success. Cancelling after expiry is 412: the alert is going out and the user is told so, rather than being shown a cancelled screen while contacts are messaged.",
+        "description": "Cancelling twice is success. Cancelling after expiry is 412: the alert is going out and the user is told so, rather than being shown a cancelled screen while workers are messaged.",
         "tags": [
-          "SOS"
+          "Alerts"
         ],
         "security": [
           {
@@ -2416,12 +2416,12 @@
         }
       }
     },
-    "/api/v1/sos/activate": {
+    "/api/v1/alerts/activate": {
       "post": {
-        "summary": "Raise an incident",
+        "summary": "Raise an alert",
         "description": "Idempotent, and the key is mandatory. Deduplicated at this layer against a stored response and again at the database with a unique index, which covers two concurrent retries that both miss the store.",
         "tags": [
-          "SOS"
+          "Alerts"
         ],
         "security": [
           {
@@ -2446,28 +2446,28 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ActivateIncident"
+                "$ref": "#/components/schemas/ActivateAlert"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Replay of an earlier activation. Same incident.",
+            "description": "Replay of an earlier activation. Same alert.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Incident"
+                  "$ref": "#/components/schemas/Alert"
                 }
               }
             }
           },
           "201": {
-            "description": "Incident raised.",
+            "description": "Alert raised.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Incident"
+                  "$ref": "#/components/schemas/Alert"
                 }
               }
             }
@@ -2505,12 +2505,12 @@
         }
       }
     },
-    "/api/v1/incidents": {
+    "/api/v1/alerts": {
       "get": {
-        "summary": "List incidents",
-        "description": "Scoped to the caller unless they are an operator or an admin.",
+        "summary": "List alerts",
+        "description": "Scoped to the caller unless they are a manager or an admin.",
         "tags": [
-          "Incidents"
+          "Alerts"
         ],
         "security": [
           {
@@ -2519,11 +2519,11 @@
         ],
         "responses": {
           "200": {
-            "description": "A page of incidents.",
+            "description": "A page of alerts.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Incident"
+                  "$ref": "#/components/schemas/Alert"
                 }
               }
             }
@@ -2541,11 +2541,11 @@
         }
       }
     },
-    "/api/v1/incidents/{id}": {
+    "/api/v1/alerts/{id}": {
       "get": {
-        "summary": "Read an incident",
+        "summary": "Read an alert",
         "tags": [
-          "Incidents"
+          "Alerts"
         ],
         "security": [
           {
@@ -2557,7 +2557,7 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "description": "Incident identifier.",
+            "description": "Alert identifier.",
             "schema": {
               "type": "string",
               "format": "uuid"
@@ -2566,11 +2566,11 @@
         ],
         "responses": {
           "200": {
-            "description": "The incident.",
+            "description": "The alert.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Incident"
+                  "$ref": "#/components/schemas/Alert"
                 }
               }
             }
@@ -2588,12 +2588,12 @@
         }
       }
     },
-    "/api/v1/incidents/{id}/timeline": {
+    "/api/v1/alerts/{id}/timeline": {
       "get": {
-        "summary": "Read the incident timeline",
+        "summary": "Read the alert timeline",
         "description": "Append-only, ordered by sequence. Pass `after` to fetch only what is new.",
         "tags": [
-          "Incidents"
+          "Alerts"
         ],
         "security": [
           {
@@ -2605,7 +2605,7 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "description": "Incident identifier.",
+            "description": "Alert identifier.",
             "schema": {
               "type": "string",
               "format": "uuid"
@@ -2624,11 +2624,11 @@
         ],
         "responses": {
           "200": {
-            "description": "Incident and events.",
+            "description": "Alert and events.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IncidentTimeline"
+                  "$ref": "#/components/schemas/AlertTimeline"
                 }
               }
             }
@@ -2646,12 +2646,12 @@
         }
       }
     },
-    "/api/v1/incidents/{id}/location": {
+    "/api/v1/alerts/{id}/location": {
       "post": {
         "summary": "Record location",
-        "description": "Accepted only from the subject and only while the incident is open, so every point on the operator map came from the device that was there. Batched so an offline client can flush a backlog in one request.",
+        "description": "Accepted only from the subject and only while the alert is open, so every point on the manager map came from the device that was there. Batched so an offline client can flush a backlog in one request.",
         "tags": [
-          "Incidents"
+          "Alerts"
         ],
         "security": [
           {
@@ -2663,7 +2663,7 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "description": "Incident identifier.",
+            "description": "Alert identifier.",
             "schema": {
               "type": "string",
               "format": "uuid"
@@ -2702,7 +2702,7 @@
             }
           },
           "422": {
-            "description": "The incident is closed.",
+            "description": "The alert is closed.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2714,12 +2714,12 @@
         }
       }
     },
-    "/api/v1/incidents/{id}/claim": {
+    "/api/v1/alerts/{id}/claim": {
       "post": {
-        "summary": "Claim an incident",
-        "description": "Operators only. The claim is a five-minute lease and expires on its own.",
+        "summary": "Claim an alert",
+        "description": "Managers only. The claim is a five-minute lease and expires on its own.",
         "tags": [
-          "Operator"
+          "Manager"
         ],
         "security": [
           {
@@ -2731,7 +2731,7 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "description": "Incident identifier.",
+            "description": "Alert identifier.",
             "schema": {
               "type": "string",
               "format": "uuid"
@@ -2743,7 +2743,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ClaimIncident"
+                "$ref": "#/components/schemas/ClaimAlert"
               }
             }
           }
@@ -2754,7 +2754,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Incident"
+                  "$ref": "#/components/schemas/Alert"
                 }
               }
             }
@@ -2770,7 +2770,7 @@
             }
           },
           "409": {
-            "description": "Held by another operator, or the version is stale.",
+            "description": "Held by another manager, or the version is stale.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2782,12 +2782,12 @@
         }
       }
     },
-    "/api/v1/incidents/{id}/release": {
+    "/api/v1/alerts/{id}/release": {
       "post": {
         "summary": "Release a claim",
-        "description": "Only the holder may release. Releasing an already-lapsed lease is success, because the operator intent is already satisfied.",
+        "description": "Only the holder may release. Releasing an already-lapsed lease is success, because the manager intent is already satisfied.",
         "tags": [
-          "Operator"
+          "Manager"
         ],
         "security": [
           {
@@ -2799,7 +2799,7 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "description": "Incident identifier.",
+            "description": "Alert identifier.",
             "schema": {
               "type": "string",
               "format": "uuid"
@@ -2811,7 +2811,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ClaimIncident"
+                "$ref": "#/components/schemas/ClaimAlert"
               }
             }
           }
@@ -2822,7 +2822,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Incident"
+                  "$ref": "#/components/schemas/Alert"
                 }
               }
             }
@@ -2850,11 +2850,11 @@
         }
       }
     },
-    "/api/v1/incidents/{id}/notes": {
+    "/api/v1/alerts/{id}/notes": {
       "post": {
-        "summary": "Add an operator note",
+        "summary": "Add a manager note",
         "tags": [
-          "Operator"
+          "Manager"
         ],
         "security": [
           {
@@ -2866,7 +2866,7 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "description": "Incident identifier.",
+            "description": "Alert identifier.",
             "schema": {
               "type": "string",
               "format": "uuid"
@@ -2878,7 +2878,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AddOperatorNote"
+                "$ref": "#/components/schemas/AddManagerNote"
               }
             }
           }
@@ -2889,7 +2889,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Incident"
+                  "$ref": "#/components/schemas/Alert"
                 }
               }
             }
@@ -2907,11 +2907,11 @@
         }
       }
     },
-    "/api/v1/incidents/{id}/priority": {
+    "/api/v1/alerts/{id}/priority": {
       "post": {
-        "summary": "Change incident priority",
+        "summary": "Change alert priority",
         "tags": [
-          "Operator"
+          "Manager"
         ],
         "security": [
           {
@@ -2923,7 +2923,7 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "description": "Incident identifier.",
+            "description": "Alert identifier.",
             "schema": {
               "type": "string",
               "format": "uuid"
@@ -2946,7 +2946,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Incident"
+                  "$ref": "#/components/schemas/Alert"
                 }
               }
             }
@@ -2964,12 +2964,12 @@
         }
       }
     },
-    "/api/v1/incidents/{id}/resolve": {
+    "/api/v1/alerts/{id}/resolve": {
       "post": {
-        "summary": "Resolve an incident",
-        "description": "Open to the subject and to the claiming operator. An operator without the claim is refused, so the timeline never records a resolution by somebody who was not working it.",
+        "summary": "Resolve an alert",
+        "description": "Open to the subject and to the claiming manager. A manager without the claim is refused, so the timeline never records a resolution by somebody who was not working it.",
         "tags": [
-          "Incidents"
+          "Alerts"
         ],
         "security": [
           {
@@ -2981,7 +2981,7 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "description": "Incident identifier.",
+            "description": "Alert identifier.",
             "schema": {
               "type": "string",
               "format": "uuid"
@@ -2993,7 +2993,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ResolveIncident"
+                "$ref": "#/components/schemas/ResolveAlert"
               }
             }
           }
@@ -3004,7 +3004,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Incident"
+                  "$ref": "#/components/schemas/Alert"
                 }
               }
             }
@@ -3022,19 +3022,19 @@
         }
       }
     },
-    "/api/v1/contact-view/{token}": {
+    "/api/v1/worker-view/{token}": {
       "get": {
-        "summary": "What a trusted contact sees",
-        "description": "No account. The signed token in the path is the credential: one incident, one contact, time-boxed, carrying no role and no user id.",
+        "summary": "What an assigned worker sees",
+        "description": "No account. The signed token in the path is the credential: one alert, one worker, time-boxed, carrying no role and no user id.",
         "tags": [
-          "Trusted contact"
+          "Assigned worker"
         ],
         "parameters": [
           {
             "name": "token",
             "in": "path",
             "required": true,
-            "description": "Signed, single-incident, single-contact view token.",
+            "description": "Signed, single-alert, single-worker view token.",
             "schema": {
               "type": "string"
             }
@@ -3042,11 +3042,11 @@
         ],
         "responses": {
           "200": {
-            "description": "A trimmed incident projection.",
+            "description": "A trimmed alert projection.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ContactIncidentView"
+                  "$ref": "#/components/schemas/WorkerAlertView"
                 }
               }
             }
@@ -3064,12 +3064,12 @@
         }
       }
     },
-    "/api/v1/contact-view/{token}/acknowledge": {
+    "/api/v1/worker-view/{token}/acknowledge": {
       "post": {
-        "summary": "Acknowledge as a trusted contact",
-        "description": "Idempotent. A contact will tap the link twice, from two devices, at 2am.",
+        "summary": "Acknowledge as an assigned worker",
+        "description": "Idempotent. A worker will tap the link twice, from two devices, at 2am.",
         "tags": [
-          "Trusted contact"
+          "Assigned worker"
         ],
         "parameters": [
           {
@@ -3087,7 +3087,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AcknowledgeIncident"
+                "$ref": "#/components/schemas/AcknowledgeAlert"
               }
             }
           }
@@ -3098,7 +3098,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ContactIncidentView"
+                  "$ref": "#/components/schemas/WorkerAlertView"
                 }
               }
             }
@@ -3427,7 +3427,7 @@
     "/api/v1/admin/users": {
       "get": {
         "summary": "List accounts",
-        "description": "Admins only, and deliberately thin: identity and deletion state, no incidents, no contacts, no location. An admin role exists to answer \"who did what\", not to be a second operator console with fewer restrictions.",
+        "description": "Admins only, and deliberately thin: identity and deletion state, no alerts, no workers, no location. An admin role exists to answer \"who did what\", not to be a second manager console with fewer restrictions.",
         "tags": [
           "Administration"
         ],

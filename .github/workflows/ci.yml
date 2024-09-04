@@ -21,7 +21,7 @@ env:
   # implying anything real.
   JWT_ACCESS_SECRET: ci-access-secret-0000000000000000000000
   JWT_REFRESH_SECRET: ci-refresh-secret-111111111111111111111
-  JWT_CONTACT_VIEW_SECRET: ci-contact-secret-222222222222222222222
+  JWT_WORKER_VIEW_SECRET: ci-worker-secret-222222222222222222222
 
 jobs:
   quality:
@@ -55,10 +55,10 @@ jobs:
       # declared here on purpose: if CI needed Postgres to run unit tests, so would
       # every contributor.
       - name: Unit and integration tests
-        run: pnpm --filter @guardianlink/api test
+        run: pnpm --filter @agricore/api test
 
       - name: End-to-end tests
-        run: pnpm --filter @guardianlink/api test:e2e
+        run: pnpm --filter @agricore/api test:e2e
 
       - name: Shared package tests
         run: pnpm --filter "./packages/**" -r test
@@ -77,8 +77,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build:packages
-      - run: pnpm --filter @guardianlink/web test
-      - run: pnpm --filter @guardianlink/web build
+      - run: pnpm --filter @agricore/web test
+      - run: pnpm --filter @agricore/web build
 
   playwright:
     name: browser journeys
@@ -95,8 +95,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build:packages
       - name: Install browsers
-        run: pnpm --filter @guardianlink/web exec playwright install --with-deps chromium
-      - run: pnpm --filter @guardianlink/web test:e2e
+        run: pnpm --filter @agricore/web exec playwright install --with-deps chromium
+      - run: pnpm --filter @agricore/web test:e2e
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
@@ -213,7 +213,7 @@ jobs:
         # deliberately contains no signing assets.
         run: |
           xcodebuild test \
-            -project GuardianLink.xcodeproj \
-            -scheme GuardianLink \
+            -project AgriCore.xcodeproj \
+            -scheme AgriCore \
             -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
             CODE_SIGNING_ALLOWED=NO

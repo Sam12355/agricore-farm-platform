@@ -2,14 +2,14 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
 /**
- * Browser journeys for the operator console.
+ * Browser journeys for the manager console.
  *
  * NOT EXECUTED on the build machine: the Playwright browsers were never downloaded
  * (roughly 400 MB). These specs are complete and the CI job runs them. That is recorded
  * in docs/test-results/README.md rather than implied otherwise.
  */
 
-test.describe('operator console', () => {
+test.describe('manager console', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/console');
   });
@@ -17,16 +17,16 @@ test.describe('operator console', () => {
   test('shows the demonstration notice without needing to scroll', async ({ page }) => {
     const notice = page.getByRole('note');
     await expect(notice).toBeVisible();
-    await expect(notice).toContainText('does not contact emergency services');
+    await expect(notice).toContainText('not connected to any real farm');
 
-    // In the header, not a footer. Somebody landing on an incident screen should not have
+    // In the header, not a footer. Somebody landing on an alert screen should not have
     // to scroll to find out that nobody is monitoring it.
     const box = await notice.boundingBox();
     expect(box?.y ?? Infinity).toBeLessThan(200);
   });
 
   test('starts with an empty state that does not read as a failure', async ({ page }) => {
-    await expect(page.getByText('No active incidents')).toBeVisible();
+    await expect(page.getByText('No active alerts')).toBeVisible();
     await expect(page.getByText(/Nothing needs refreshing/)).toBeVisible();
   });
 
@@ -36,23 +36,23 @@ test.describe('operator console', () => {
   });
 
   test('the queue is a single tab stop', async ({ page }) => {
-    await page.getByRole('button', { name: /demonstration incident/i }).click();
-    await page.getByRole('button', { name: /demonstration incident/i }).click();
-    await page.getByRole('button', { name: /demonstration incident/i }).click();
+    await page.getByRole('button', { name: /demonstration alert/i }).click();
+    await page.getByRole('button', { name: /demonstration alert/i }).click();
+    await page.getByRole('button', { name: /demonstration alert/i }).click();
 
     const options = page.getByRole('option');
     await expect(options).toHaveCount(3);
 
-    // One tab stop for the whole list. An operator working the keyboard while on a call
+    // One tab stop for the whole list. A manager working the keyboard while on a call
     // should not press Tab forty times to get past it.
     await expect(options.nth(0)).toHaveAttribute('tabindex', '0');
     await expect(options.nth(1)).toHaveAttribute('tabindex', '-1');
     await expect(options.nth(2)).toHaveAttribute('tabindex', '-1');
   });
 
-  test('arrow keys move through the queue and Enter opens an incident', async ({ page }) => {
-    await page.getByRole('button', { name: /demonstration incident/i }).click();
-    await page.getByRole('button', { name: /demonstration incident/i }).click();
+  test('arrow keys move through the queue and Enter opens an alert', async ({ page }) => {
+    await page.getByRole('button', { name: /demonstration alert/i }).click();
+    await page.getByRole('button', { name: /demonstration alert/i }).click();
 
     const options = page.getByRole('option');
     await options.nth(0).focus();
@@ -69,7 +69,7 @@ test.describe('operator console', () => {
 
   test('End and Home jump to the ends of the queue', async ({ page }) => {
     for (let i = 0; i < 4; i += 1) {
-      await page.getByRole('button', { name: /demonstration incident/i }).click();
+      await page.getByRole('button', { name: /demonstration alert/i }).click();
     }
 
     const options = page.getByRole('option');
@@ -84,15 +84,15 @@ test.describe('operator console', () => {
 
   test('sorts critical above the rest', async ({ page }) => {
     for (let i = 0; i < 4; i += 1) {
-      await page.getByRole('button', { name: /demonstration incident/i }).click();
+      await page.getByRole('button', { name: /demonstration alert/i }).click();
     }
 
-    // The list is what an operator's eye lands on first, so the ordering is doing real work.
+    // The list is what a manager's eye lands on first, so the ordering is doing real work.
     await expect(page.getByRole('option').first()).toContainText('Critical');
   });
 
   test('focus is visible rather than removed', async ({ page }) => {
-    await page.getByRole('button', { name: /demonstration incident/i }).click();
+    await page.getByRole('button', { name: /demonstration alert/i }).click();
 
     const option = page.getByRole('option').first();
     await option.focus();
@@ -102,8 +102,8 @@ test.describe('operator console', () => {
   });
 
   test('has no serious accessibility violations', async ({ page }) => {
-    await page.getByRole('button', { name: /demonstration incident/i }).click();
-    await page.getByRole('button', { name: /demonstration incident/i }).click();
+    await page.getByRole('button', { name: /demonstration alert/i }).click();
+    await page.getByRole('button', { name: /demonstration alert/i }).click();
 
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
@@ -118,7 +118,7 @@ test.describe('operator console', () => {
 
   test('does not scroll horizontally at a phone width', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
-    await page.getByRole('button', { name: /demonstration incident/i }).click();
+    await page.getByRole('button', { name: /demonstration alert/i }).click();
 
     const overflows = await page.evaluate(
       () => document.documentElement.scrollWidth > document.documentElement.clientWidth,

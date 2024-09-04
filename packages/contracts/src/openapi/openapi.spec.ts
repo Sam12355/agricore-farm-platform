@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
 import { registerRequestSchema } from '../auth';
-import { activateIncidentSchema, incidentSchema } from '../incidents';
+import { activateAlertSchema, alertSchema } from '../alerts';
 import { buildOpenApiDocument } from './document';
 import { toOpenApiSchema } from './zod-to-openapi';
 
@@ -91,7 +91,7 @@ describe('the generated document', () => {
 
   it('states in the description that it is a demonstration', () => {
     expect((document['info'] as { description: string }).description).toContain(
-      'does not contact emergency services',
+      'not a working farm operations service',
     );
   });
 
@@ -112,19 +112,19 @@ describe('the generated document', () => {
   });
 
   it('requires a bearer token on every authenticated route', () => {
-    const activate = paths['/api/v1/sos/activate']?.['post'] as {
+    const activate = paths['/api/v1/alerts/activate']?.['post'] as {
       security?: Array<Record<string, string[]>>;
     };
     expect(activate.security?.[0]?.['bearerAuth']).toBeDefined();
   });
 
-  it('leaves the contact-view routes unauthenticated, because the token is the credential', () => {
-    const view = paths['/api/v1/contact-view/{token}']?.['get'] as { security?: unknown };
+  it('leaves the worker-view routes unauthenticated, because the token is the credential', () => {
+    const view = paths['/api/v1/worker-view/{token}']?.['get'] as { security?: unknown };
     expect(view.security).toBeUndefined();
   });
 
   it('documents the mandatory Idempotency-Key on activation', () => {
-    const activate = paths['/api/v1/sos/activate']?.['post'] as {
+    const activate = paths['/api/v1/alerts/activate']?.['post'] as {
       parameters: Array<{ name: string; required: boolean }>;
     };
     const header = activate.parameters.find((p) => p.name === 'Idempotency-Key');
@@ -132,7 +132,7 @@ describe('the generated document', () => {
   });
 
   it('documents the 409 for a reused key with a different body', () => {
-    const activate = paths['/api/v1/sos/activate']?.['post'] as {
+    const activate = paths['/api/v1/alerts/activate']?.['post'] as {
       responses: Record<string, { description: string }>;
     };
     expect(activate.responses['409']?.description).toContain('different body');
@@ -152,9 +152,9 @@ describe('the generated document', () => {
     expect(components.schemas['RegisterRequest']).toEqual(
       toOpenApiSchema(registerRequestSchema, 'RegisterRequest'),
     );
-    expect(components.schemas['Incident']).toEqual(toOpenApiSchema(incidentSchema, 'Incident'));
-    expect(components.schemas['ActivateIncident']).toEqual(
-      toOpenApiSchema(activateIncidentSchema, 'ActivateIncident'),
+    expect(components.schemas['Alert']).toEqual(toOpenApiSchema(alertSchema, 'Alert'));
+    expect(components.schemas['ActivateAlert']).toEqual(
+      toOpenApiSchema(activateAlertSchema, 'ActivateAlert'),
     );
   });
 

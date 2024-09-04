@@ -1,4 +1,4 @@
--- GuardianLink initial schema
+-- AgriCore initial schema
 --
 -- Forward-only. Every migration is a new file; none are edited after they have run
 -- anywhere. The runner records a checksum per file, so an edited migration is caught
@@ -17,7 +17,7 @@ CREATE EXTENSION IF NOT EXISTS citext;
 
 -- Users -----------------------------------------------------------------------
 
-CREATE TYPE user_role AS ENUM ('user', 'operator', 'admin');
+CREATE TYPE user_role AS ENUM ('user', 'manager', 'admin');
 
 CREATE TABLE users (
     id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -62,19 +62,19 @@ CREATE INDEX refresh_tokens_family_idx ON refresh_tokens (family_id) WHERE revok
 CREATE INDEX refresh_tokens_user_idx ON refresh_tokens (user_id);
 CREATE INDEX refresh_tokens_expiry_idx ON refresh_tokens (expires_at);
 
--- Trusted contacts -------------------------------------------------------------
+-- Assigned workers -------------------------------------------------------------
 
-CREATE TYPE contact_channel AS ENUM ('email', 'sms', 'push', 'any');
+CREATE TYPE worker_channel AS ENUM ('email', 'sms', 'push', 'any');
 
-CREATE TABLE trusted_contacts (
+CREATE TABLE workers (
     id                     UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id                UUID            NOT NULL REFERENCES users (id) ON DELETE CASCADE,
     name                   TEXT            NOT NULL,
     email                  CITEXT,
     phone                  TEXT,
-    relationship           TEXT,
+    job_role               TEXT,
     priority               SMALLINT        NOT NULL DEFAULT 1,
-    preferred_channel      contact_channel NOT NULL DEFAULT 'any',
+    preferred_channel      worker_channel NOT NULL DEFAULT 'any',
     can_view_live_location BOOLEAN         NOT NULL DEFAULT TRUE,
     verified_at            TIMESTAMPTZ,
     created_at             TIMESTAMPTZ     NOT NULL DEFAULT now(),
@@ -82,22 +82,22 @@ CREATE TABLE trusted_contacts (
     deleted_at             TIMESTAMPTZ,
 
     -- The same rule the API enforces, held at the database level so no code path can
-    -- create a contact nobody can reach.
-    CONSTRAINT trusted_contacts_reachable CHECK (email IS NOT NULL OR phone IS NOT NULL),
-    CONSTRAINT trusted_contacts_priority_range CHECK (priority BETWEEN 1 AND 10)
+    -- create a worker nobody can reach.
+    CONSTRAINT workers_reachable CHECK (email IS NOT NULL OR phone IS NOT NULL),
+    CONSTRAINT workers_priority_range CHECK (priority BETWEEN 1 AND 10)
 );
 
-CREATE INDEX trusted_contacts_user_idx ON trusted_contacts (user_id, priority)
+CREATE INDEX workers_user_idx ON workers (user_id, priority)
     WHERE deleted_at IS NULL;
 
--- Safety sessions --------------------------------------------------------------
+-- Field operations --------------------------------------------------------------
 
-CREATE TYPE safety_session_status AS ENUM ('active', 'completed', 'expired', 'escalated');
+CREATE TYPE field_operation_status AS ENUM ('active', 'completed', 'expired', 'escalated');
 
-CREATE TABLE safety_sessions (
+CREATE TABLE field_operations (
     id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id            UUID                  NOT NULL REFERENCES users (id) ON DELETE CASCADE,
-    status             safety_session_status NOT NULL DEFAULT 'active',
+    status             field_operation_status NOT NULL DEFAULT 'active',
     started_at         TIMESTAMPTZ           NOT NULL DEFAULT now(),
     expected_end_at    TIMESTAMPTZ           NOT NULL,
     ended_at           TIMESTAMPTZ,
@@ -108,59 +108,59 @@ CREATE TABLE safety_sessions (
 
 -- One active session per user. A unique partial index states that as a fact rather than
 -- leaving it to application code that a future endpoint might forget.
-CREATE UNIQUE INDEX safety_sessions_one_active_per_user
-    ON safety_sessions (user_id) WHERE status = 'active';
-CREATE INDEX safety_sessions_overdue_idx ON safety_sessions (expected_end_at)
+CREATE UNIQUE INDEX field_operations_one_active_per_user
+    ON field_operations (user_id) WHERE status = 'active';
+CREATE INDEX field_operations_overdue_idx ON field_operations (expected_end_at)
     WHERE status = 'active';
 
--- SOS countdowns ---------------------------------------------------------------
+-- Alert countdowns ---------------------------------------------------------------
 
 CREATE TYPE countdown_status AS ENUM ('pending', 'cancelled', 'activated');
 
-CREATE TABLE sos_countdowns (
+CREATE TABLE alert_countdowns (
     id                         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id                    UUID             NOT NULL REFERENCES users (id) ON DELETE CASCADE,
-    session_id                 UUID REFERENCES safety_sessions (id) ON DELETE SET NULL,
+    session_id                 UUID REFERENCES field_operations (id) ON DELETE SET NULL,
     status                     countdown_status NOT NULL DEFAULT 'pending',
     started_at                 TIMESTAMPTZ      NOT NULL DEFAULT now(),
     expires_at                 TIMESTAMPTZ      NOT NULL,
     cancelled_at               TIMESTAMPTZ,
     cancel_reason              TEXT,
-    incident_id                UUID,
+    alert_id                UUID,
     -- Minted by the device when the countdown starts, so a crash mid-countdown still
     -- deduplicates when the app restarts and retries.
     activation_idempotency_key TEXT             NOT NULL
 );
 
-CREATE INDEX sos_countdowns_user_idx ON sos_countdowns (user_id, started_at DESC);
+CREATE INDEX alert_countdowns_user_idx ON alert_countdowns (user_id, started_at DESC);
 
--- Incidents --------------------------------------------------------------------
+-- Alerts --------------------------------------------------------------------
 
-CREATE TYPE incident_status   AS ENUM ('active', 'acknowledged', 'resolved', 'cancelled');
-CREATE TYPE incident_priority AS ENUM ('low', 'standard', 'high', 'critical');
-CREATE TYPE incident_trigger  AS ENUM ('sos_countdown', 'manual_panic', 'session_overdue', 'operator_created');
+CREATE TYPE alert_status   AS ENUM ('active', 'acknowledged', 'resolved', 'cancelled');
+CREATE TYPE alert_priority AS ENUM ('low', 'standard', 'high', 'critical');
+CREATE TYPE alert_trigger  AS ENUM ('field_countdown', 'manual_report', 'operation_overdue', 'manager_created');
 
-CREATE TABLE incidents (
+CREATE TABLE alerts (
     id                        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id                   UUID              NOT NULL REFERENCES users (id) ON DELETE CASCADE,
-    session_id                UUID REFERENCES safety_sessions (id) ON DELETE SET NULL,
-    status                    incident_status   NOT NULL DEFAULT 'active',
-    priority                  incident_priority NOT NULL DEFAULT 'standard',
-    trigger                   incident_trigger  NOT NULL,
+    session_id                UUID REFERENCES field_operations (id) ON DELETE SET NULL,
+    status                    alert_status   NOT NULL DEFAULT 'active',
+    priority                  alert_priority NOT NULL DEFAULT 'standard',
+    trigger                   alert_trigger  NOT NULL,
     activated_at              TIMESTAMPTZ       NOT NULL,
     resolved_at               TIMESTAMPTZ,
     resolved_by               UUID REFERENCES users (id) ON DELETE SET NULL,
     resolution                TEXT,
-    claimed_by_operator_id    UUID REFERENCES users (id) ON DELETE SET NULL,
+    claimed_by_manager_id    UUID REFERENCES users (id) ON DELETE SET NULL,
     claimed_at                TIMESTAMPTZ,
-    -- A claim is a lease, not a lock. Without an expiry an operator who closes their
-    -- laptop holds the incident for ever and nobody else can pick it up.
+    -- A claim is a lease, not a lock. Without an expiry a manager who closes their
+    -- laptop holds the alert for ever and nobody else can pick it up.
     claim_expires_at          TIMESTAMPTZ,
     last_latitude             DOUBLE PRECISION,
     last_longitude            DOUBLE PRECISION,
     last_accuracy_metres      DOUBLE PRECISION,
     last_location_captured_at TIMESTAMPTZ,
-    acknowledged_by_contact_id UUID REFERENCES trusted_contacts (id) ON DELETE SET NULL,
+    acknowledged_by_worker_id UUID REFERENCES workers (id) ON DELETE SET NULL,
     acknowledged_at           TIMESTAMPTZ,
     -- Optimistic concurrency. Every update says WHERE version = $n and a zero row count
     -- means somebody else got there first.
@@ -168,52 +168,52 @@ CREATE TABLE incidents (
     created_at                TIMESTAMPTZ       NOT NULL DEFAULT now(),
     updated_at                TIMESTAMPTZ       NOT NULL DEFAULT now(),
 
-    CONSTRAINT incidents_resolution_consistent
+    CONSTRAINT alerts_resolution_consistent
         CHECK ((status = 'resolved') = (resolved_at IS NOT NULL)),
-    CONSTRAINT incidents_claim_consistent
-        CHECK ((claimed_by_operator_id IS NULL) = (claim_expires_at IS NULL))
+    CONSTRAINT alerts_claim_consistent
+        CHECK ((claimed_by_manager_id IS NULL) = (claim_expires_at IS NULL))
 );
 
-CREATE INDEX incidents_queue_idx ON incidents (status, activated_at DESC, id DESC);
-CREATE INDEX incidents_user_idx ON incidents (user_id, activated_at DESC);
-CREATE INDEX incidents_unclaimed_idx ON incidents (claim_expires_at)
+CREATE INDEX alerts_queue_idx ON alerts (status, activated_at DESC, id DESC);
+CREATE INDEX alerts_user_idx ON alerts (user_id, activated_at DESC);
+CREATE INDEX alerts_unclaimed_idx ON alerts (claim_expires_at)
     WHERE status = 'active';
 
 -- Idempotency for activation. A unique index is what makes the deduplication a database
 -- guarantee rather than a check-then-write race between two concurrent retries.
-CREATE TABLE incident_idempotency (
+CREATE TABLE alert_idempotency (
     user_id     UUID        NOT NULL REFERENCES users (id) ON DELETE CASCADE,
     key         TEXT        NOT NULL,
-    incident_id UUID        NOT NULL REFERENCES incidents (id) ON DELETE CASCADE,
+    alert_id UUID        NOT NULL REFERENCES alerts (id) ON DELETE CASCADE,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
     PRIMARY KEY (user_id, key)
 );
 
--- Incident timeline ------------------------------------------------------------
+-- Alert timeline ------------------------------------------------------------
 
-CREATE TABLE incident_events (
+CREATE TABLE alert_events (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    incident_id UUID        NOT NULL REFERENCES incidents (id) ON DELETE CASCADE,
+    alert_id UUID        NOT NULL REFERENCES alerts (id) ON DELETE CASCADE,
     -- Allocated inside the writing transaction, never by the application. Two
     -- concurrent writers cannot both decide they are number seven. Clients order by
     -- this and never by a timestamp, because device and server clocks disagree.
     sequence    INTEGER     NOT NULL,
     type        TEXT        NOT NULL,
-    actor_type  TEXT        NOT NULL CHECK (actor_type IN ('user', 'operator', 'contact', 'system')),
+    actor_type  TEXT        NOT NULL CHECK (actor_type IN ('user', 'manager', 'worker', 'system')),
     actor_id    UUID,
     occurred_at TIMESTAMPTZ NOT NULL,
     recorded_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     payload     JSONB       NOT NULL DEFAULT '{}'::jsonb,
 
-    UNIQUE (incident_id, sequence)
+    UNIQUE (alert_id, sequence)
 );
 
-CREATE INDEX incident_events_replay_idx ON incident_events (incident_id, sequence);
+CREATE INDEX alert_events_replay_idx ON alert_events (alert_id, sequence);
 
 -- The timeline is append-only, and that is enforced here rather than trusted to the
 -- application. An audit trail a privileged caller can rewrite is not an audit trail.
-CREATE RULE incident_events_no_update AS ON UPDATE TO incident_events DO INSTEAD NOTHING;
-CREATE RULE incident_events_no_delete AS ON DELETE TO incident_events DO INSTEAD NOTHING;
+CREATE RULE alert_events_no_update AS ON UPDATE TO alert_events DO INSTEAD NOTHING;
+CREATE RULE alert_events_no_delete AS ON DELETE TO alert_events DO INSTEAD NOTHING;
 
 -- Transactional outbox ---------------------------------------------------------
 
@@ -247,13 +247,13 @@ CREATE TYPE delivery_status AS ENUM ('pending', 'sent', 'delivered', 'failed', '
 
 CREATE TABLE notifications (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    incident_id     UUID                 NOT NULL REFERENCES incidents (id) ON DELETE CASCADE,
-    contact_id      UUID                 NOT NULL REFERENCES trusted_contacts (id) ON DELETE CASCADE,
+    alert_id     UUID                 NOT NULL REFERENCES alerts (id) ON DELETE CASCADE,
+    worker_id      UUID                 NOT NULL REFERENCES workers (id) ON DELETE CASCADE,
     channel         notification_channel NOT NULL,
     status          delivery_status      NOT NULL DEFAULT 'pending',
     attempts        INTEGER              NOT NULL DEFAULT 0,
     last_error      TEXT,
-    -- One row per incident and contact. This is what makes a replayed outbox message a
+    -- One row per alert and worker. This is what makes a replayed outbox message a
     -- no-op instead of a second message to a person who is already worried.
     dedupe_key      TEXT                 NOT NULL UNIQUE,
     created_at      TIMESTAMPTZ          NOT NULL DEFAULT now(),
@@ -261,13 +261,13 @@ CREATE TABLE notifications (
     acknowledged_at TIMESTAMPTZ
 );
 
-CREATE INDEX notifications_incident_idx ON notifications (incident_id);
-CREATE INDEX notifications_escalation_idx ON notifications (incident_id, acknowledged_at)
+CREATE INDEX notifications_alert_idx ON notifications (alert_id);
+CREATE INDEX notifications_escalation_idx ON notifications (alert_id, acknowledged_at)
     WHERE acknowledged_at IS NULL;
 
 -- Subscriptions ----------------------------------------------------------------
 
-CREATE TYPE subscription_tier   AS ENUM ('free', 'plus', 'family');
+CREATE TYPE subscription_tier   AS ENUM ('free', 'plus', 'team');
 CREATE TYPE subscription_status AS ENUM ('none', 'active', 'in_grace_period', 'expired', 'cancelled');
 CREATE TYPE store_platform      AS ENUM ('apple', 'google', 'none');
 
@@ -290,16 +290,16 @@ CREATE TABLE subscriptions (
 
 CREATE TABLE privacy_settings (
     user_id                         UUID PRIMARY KEY REFERENCES users (id) ON DELETE CASCADE,
-    share_location_with_contacts    BOOLEAN     NOT NULL DEFAULT TRUE,
-    share_location_with_operators   BOOLEAN     NOT NULL DEFAULT TRUE,
+    share_location_with_workers    BOOLEAN     NOT NULL DEFAULT TRUE,
+    share_location_with_managers   BOOLEAN     NOT NULL DEFAULT TRUE,
     store_precise_location_history  BOOLEAN     NOT NULL DEFAULT FALSE,
-    incident_retention_days         INTEGER     NOT NULL DEFAULT 365,
+    alert_retention_days         INTEGER     NOT NULL DEFAULT 365,
     location_retention_days         INTEGER     NOT NULL DEFAULT 30,
     notification_log_retention_days INTEGER     NOT NULL DEFAULT 90,
     allow_anonymised_analytics      BOOLEAN     NOT NULL DEFAULT FALSE,
     updated_at                      TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-    CONSTRAINT retention_incident_range  CHECK (incident_retention_days BETWEEN 30 AND 1095),
+    CONSTRAINT retention_alert_range  CHECK (alert_retention_days BETWEEN 30 AND 1095),
     CONSTRAINT retention_location_range  CHECK (location_retention_days BETWEEN 1 AND 90),
     CONSTRAINT retention_notification_range CHECK (notification_log_retention_days BETWEEN 7 AND 365)
 );

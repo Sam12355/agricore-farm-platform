@@ -115,7 +115,7 @@ describe('coarsen', () => {
     expect(result.longitude).toBe(4.904);
   });
 
-  it('drops enough precision that a street address cannot be recovered', () => {
+  it('drops enough precision that a specific building cannot be identified', () => {
     const exact = { latitude: 52.376712, longitude: 4.904139 };
     const rounded = coarsen(exact, 3);
     expect(distanceMetres(exact, rounded)).toBeLessThan(120);

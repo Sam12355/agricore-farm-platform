@@ -8,7 +8,8 @@ import { SeededRandom } from './random';
  * - Phone numbers use +1 555 01xx, the North American range set aside for fiction, and
  *   +44 7700 900xxx, the UK Ofcom drama range.
  * - Coordinates are scattered around an invented origin in the North Sea, so no fixture
- *   ever points at a real home, office or landmark.
+ *   ever points at a real farm, holding or landmark. Open water is an odd place for a
+ *   tractor, and that is the point: nobody can mistake demo data for a real business.
  *
  * That is a deliberate constraint, not a formality: seed data has a habit of ending up in
  * screenshots, and screenshots end up in a portfolio that strangers read.
@@ -32,21 +33,22 @@ const FAMILY_NAMES = [
   'Oduya', 'Petrov', 'Quist', 'Rasmussen', 'Sorensen', 'Tavares',
 ] as const;
 
-const RELATIONSHIPS = [
-  'Partner', 'Parent', 'Sibling', 'Housemate', 'Friend', 'Colleague', 'Neighbour',
+const JOB_ROLES = [
+  'Tractor operator', 'Agronomist', 'Irrigation technician', 'Harvest lead',
+  'Machinery mechanic', 'Sprayer operator', 'Stockperson',
 ] as const;
 
 const DESTINATIONS = [
-  'Evening class', 'Late shift', 'Running route', 'Station walk', 'Cycle home',
-  'Client visit', 'Dog walk', 'Airport transfer',
+  'North Field', 'Block 4 orchard', 'River Paddock', 'Home Block',
+  'West Terrace', 'Pump house', 'Grain store', 'South Headland',
 ] as const;
 
-const OPERATOR_NOTES = [
-  'Attempted voice contact, no answer. Continuing to monitor position.',
-  'Subject moving steadily along the expected route.',
-  'Primary contact acknowledged and is calling the subject directly.',
-  'Position has not updated for four minutes. Escalating priority.',
-  'Subject confirmed safe by secondary contact. Preparing to resolve.',
+const MANAGER_NOTES = [
+  'Tried the radio, no answer. Still watching the machine position.',
+  'Machine moving steadily along the planned pass.',
+  'Primary worker acknowledged and is driving out to the block.',
+  'Position has not updated for four minutes. Raising priority.',
+  'Second worker reached the block and reports the job is finished. Preparing to resolve.',
 ] as const;
 
 export interface SyntheticPerson {
@@ -55,8 +57,8 @@ export interface SyntheticPerson {
   readonly phone: string;
 }
 
-export interface SyntheticContact extends SyntheticPerson {
-  readonly relationship: string;
+export interface SyntheticWorker extends SyntheticPerson {
+  readonly jobRole: string;
   readonly priority: number;
 }
 
@@ -78,14 +80,14 @@ export function syntheticPerson(random: SeededRandom, index: number): SyntheticP
   };
 }
 
-export function syntheticContact(
+export function syntheticWorker(
   random: SeededRandom,
   index: number,
   priority: number,
-): SyntheticContact {
+): SyntheticWorker {
   return {
     ...syntheticPerson(random, index),
-    relationship: random.pick(RELATIONSHIPS),
+    jobRole: random.pick(JOB_ROLES),
     priority,
   };
 }
@@ -94,8 +96,8 @@ export function syntheticDestination(random: SeededRandom): string {
   return random.pick(DESTINATIONS);
 }
 
-export function syntheticOperatorNote(random: SeededRandom): string {
-  return random.pick(OPERATOR_NOTES);
+export function syntheticManagerNote(random: SeededRandom): string {
+  return random.pick(MANAGER_NOTES);
 }
 
 /** A point within roughly `spreadMetres` of the invented origin. */
@@ -117,8 +119,9 @@ export function syntheticCoordinates(
 }
 
 /**
- * A plausible movement track: someone walking, not teleporting. Used by the demo
- * scenarios so the operator map shows a line rather than a scatter of unrelated dots.
+ * A plausible movement track: a machine working across a block, not teleporting. Used by
+ * the demo scenarios so the manager map shows a line rather than a scatter of unrelated
+ * dots.
  */
 export function syntheticTrack(
   random: SeededRandom,
@@ -154,4 +157,4 @@ export function syntheticTrack(
 }
 
 /** Passwords used by the demo accounts. Documented publicly; they guard nothing real. */
-export const DEMO_PASSWORD = 'guardianlink-demo-passphrase';
+export const DEMO_PASSWORD = 'agricore-demo-passphrase';

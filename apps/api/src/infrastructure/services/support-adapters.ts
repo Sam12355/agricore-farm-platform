@@ -8,7 +8,7 @@ import {
   type Result,
   err,
   ok,
-} from '@guardianlink/shared-types';
+} from '@agricore/shared-types';
 
 import type {
   DistributedLock,
@@ -137,10 +137,10 @@ export class ConsoleEmailAdapter implements NotificationChannelAdapter {
 
   async send(message: NotificationMessage): Promise<Result<{ providerRef: string }, DomainError>> {
     if (message.to.email === null) {
-      return err(DomainErrors.validation('That contact has no email address.'));
+      return err(DomainErrors.validation('That worker has no email address.'));
     }
     // The address itself never reaches the log; the redaction layer would strip it
-    // anyway, and the reference is what an operator actually needs to trace a delivery.
+    // anyway, and the reference is what a manager actually needs to trace a delivery.
     this.logger.info('email delivered to local provider', {
       correlationId: message.correlationId,
       subject: message.subject,
@@ -156,7 +156,7 @@ export class MockSmsAdapter implements NotificationChannelAdapter {
 
   async send(message: NotificationMessage): Promise<Result<{ providerRef: string }, DomainError>> {
     if (message.to.phone === null) {
-      return err(DomainErrors.validation('That contact has no phone number.'));
+      return err(DomainErrors.validation('That worker has no phone number.'));
     }
     this.logger.info('sms delivered to mock provider', {
       correlationId: message.correlationId,

@@ -1,6 +1,6 @@
 import { HttpStatus } from '@nestjs/common';
 
-import { DomainErrorCode, type DomainError } from '@guardianlink/shared-types';
+import { DomainErrorCode, type DomainError } from '@agricore/shared-types';
 
 /**
  * One place where a domain error becomes a status code.

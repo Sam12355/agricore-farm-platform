@@ -6,7 +6,7 @@
  * packages/design-tokens/src/contrast.spec.ts, and a literal written here would bypass
  * that test entirely.
  */
-@import '@guardianlink/design-tokens/generated/tokens.css';
+@import '@agricore/design-tokens/generated/tokens.css';
 
 *,
 *::before,
@@ -21,34 +21,34 @@ html {
 
 body {
   margin: 0;
-  font-family: var(--gl-font-family-sans);
-  font-size: var(--gl-font-size-base);
-  line-height: var(--gl-line-height-normal);
-  color: var(--gl-color-text-primary);
-  background: var(--gl-color-surface-base);
+  font-family: var(--ac-font-family-sans);
+  font-size: var(--ac-font-size-base);
+  line-height: var(--ac-line-height-normal);
+  color: var(--ac-color-text-primary);
+  background: var(--ac-color-surface-base);
 }
 
 /* Focus is restyled, never removed. :focus-visible so a mouse click does not draw a ring
    but keyboard navigation always does. */
 :focus-visible {
-  outline: 3px solid var(--gl-color-focus-ring);
+  outline: 3px solid var(--ac-color-focus-ring);
   outline-offset: 2px;
-  border-radius: var(--gl-radius-sm);
+  border-radius: var(--ac-radius-sm);
 }
 
 .skip-link {
   position: absolute;
   left: -9999px;
-  top: var(--gl-space-2);
-  padding: var(--gl-space-2) var(--gl-space-4);
-  background: var(--gl-color-brand-primary);
-  color: var(--gl-color-text-inverse);
-  border-radius: var(--gl-radius-md);
+  top: var(--ac-space-2);
+  padding: var(--ac-space-2) var(--ac-space-4);
+  background: var(--ac-color-brand-primary);
+  color: var(--ac-color-text-inverse);
+  border-radius: var(--ac-radius-md);
   z-index: 100;
 }
 
 .skip-link:focus {
-  left: var(--gl-space-2);
+  left: var(--ac-space-2);
 }
 
 .visually-hidden {
@@ -64,40 +64,40 @@ body {
 }
 
 .demo-banner {
-  padding: var(--gl-space-2) var(--gl-space-4);
-  background: var(--gl-color-status-caution-subtle);
-  color: var(--gl-color-status-caution);
-  border-bottom: 1px solid var(--gl-color-border-default);
-  font-size: var(--gl-font-size-sm);
+  padding: var(--ac-space-2) var(--ac-space-4);
+  background: var(--ac-color-status-caution-subtle);
+  color: var(--ac-color-status-caution);
+  border-bottom: 1px solid var(--ac-color-border-default);
+  font-size: var(--ac-font-size-sm);
   text-align: center;
 }
 
 .app-header {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--gl-space-4);
+  gap: var(--ac-space-4);
   align-items: center;
   justify-content: space-between;
-  padding: var(--gl-space-4);
-  border-bottom: 1px solid var(--gl-color-border-default);
-  background: var(--gl-color-surface-raised);
+  padding: var(--ac-space-4);
+  border-bottom: 1px solid var(--ac-color-border-default);
+  background: var(--ac-color-surface-raised);
 }
 
 .app-header__brand {
-  font-weight: var(--gl-font-weight-semibold);
-  font-size: var(--gl-font-size-lg);
+  font-weight: var(--ac-font-weight-semibold);
+  font-size: var(--ac-font-size-lg);
 }
 
 .app-header nav {
   display: flex;
-  gap: var(--gl-space-4);
+  gap: var(--ac-space-4);
 }
 
 .app-header a {
-  color: var(--gl-color-brand-primary);
+  color: var(--ac-color-brand-primary);
   text-decoration: none;
   /* Meets the WCAG 2.2 target-size guidance without needing a wrapper element. */
-  min-height: var(--gl-min-touch-target);
+  min-height: var(--ac-min-touch-target);
   display: inline-flex;
   align-items: center;
 }
@@ -109,41 +109,41 @@ body {
 .page {
   max-width: 68rem;
   margin: 0 auto;
-  padding: var(--gl-space-6) var(--gl-space-4);
+  padding: var(--ac-space-6) var(--ac-space-4);
 }
 
 .lead {
-  font-size: var(--gl-font-size-lg);
-  color: var(--gl-color-text-secondary);
+  font-size: var(--ac-font-size-lg);
+  color: var(--ac-color-text-secondary);
 }
 
 .card {
-  padding: var(--gl-space-5);
-  border: 1px solid var(--gl-color-border-default);
-  border-radius: var(--gl-radius-lg);
-  background: var(--gl-color-surface-raised);
-  box-shadow: var(--gl-shadow-sm);
+  padding: var(--ac-space-5);
+  border: 1px solid var(--ac-color-border-default);
+  border-radius: var(--ac-radius-lg);
+  background: var(--ac-color-surface-raised);
+  box-shadow: var(--ac-shadow-sm);
 }
 
 .card--notice {
-  background: var(--gl-color-status-caution-subtle);
-  border-color: var(--gl-color-status-caution);
+  background: var(--ac-color-status-caution-subtle);
+  border-color: var(--ac-color-status-caution);
 }
 
 .surface-list {
   list-style: none;
   padding: 0;
   display: grid;
-  gap: var(--gl-space-4);
+  gap: var(--ac-space-4);
   grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
 }
 
-/* --- Operator queue ---------------------------------------------------------------- */
+/* --- Manager queue ---------------------------------------------------------------- */
 
 .queue {
   display: flex;
   flex-direction: column;
-  gap: var(--gl-space-3);
+  gap: var(--ac-space-3);
 }
 
 .queue__list {
@@ -152,122 +152,122 @@ body {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--gl-space-2);
+  gap: var(--ac-space-2);
 }
 
 .queue__item {
   display: grid;
   grid-template-columns: auto 1fr auto auto;
-  gap: var(--gl-space-3);
+  gap: var(--ac-space-3);
   align-items: center;
-  padding: var(--gl-space-3) var(--gl-space-4);
-  min-height: var(--gl-min-touch-target);
-  border: 1px solid var(--gl-color-border-default);
-  border-radius: var(--gl-radius-md);
-  background: var(--gl-color-surface-raised);
+  padding: var(--ac-space-3) var(--ac-space-4);
+  min-height: var(--ac-min-touch-target);
+  border: 1px solid var(--ac-color-border-default);
+  border-radius: var(--ac-radius-md);
+  background: var(--ac-color-surface-raised);
   cursor: pointer;
-  transition: border-color var(--gl-duration-fast) ease;
+  transition: border-color var(--ac-duration-fast) ease;
 }
 
 .queue__item:hover {
-  border-color: var(--gl-color-border-strong);
+  border-color: var(--ac-color-border-strong);
 }
 
 .queue__item--selected {
-  border-color: var(--gl-color-brand-primary);
-  background: var(--gl-color-brand-subtle);
+  border-color: var(--ac-color-brand-primary);
+  background: var(--ac-color-brand-subtle);
 }
 
 /* A left border rather than a background wash, so priority is not signalled by colour
    alone. The badge carries the word as well. */
 .queue__item--critical {
-  border-left: 4px solid var(--gl-color-status-critical);
+  border-left: 4px solid var(--ac-color-status-critical);
 }
 .queue__item--high {
-  border-left: 4px solid var(--gl-color-status-caution);
+  border-left: 4px solid var(--ac-color-status-caution);
 }
 .queue__item--standard {
-  border-left: 4px solid var(--gl-color-border-strong);
+  border-left: 4px solid var(--ac-color-border-strong);
 }
 .queue__item--low {
-  border-left: 4px solid var(--gl-color-status-neutral);
+  border-left: 4px solid var(--ac-color-status-neutral);
 }
 
 .queue__item-id {
-  font-family: var(--gl-font-family-mono);
-  font-size: var(--gl-font-size-sm);
+  font-family: var(--ac-font-family-mono);
+  font-size: var(--ac-font-size-sm);
 }
 
 .queue__item-age,
 .queue__item-claim {
-  font-size: var(--gl-font-size-sm);
-  color: var(--gl-color-text-secondary);
+  font-size: var(--ac-font-size-sm);
+  color: var(--ac-color-text-secondary);
 }
 
 .queue__item-claim--mine {
-  color: var(--gl-color-brand-primary);
-  font-weight: var(--gl-font-weight-medium);
+  color: var(--ac-color-brand-primary);
+  font-weight: var(--ac-font-weight-medium);
 }
 
 .queue--empty {
-  padding: var(--gl-space-7) var(--gl-space-4);
+  padding: var(--ac-space-7) var(--ac-space-4);
   text-align: center;
-  color: var(--gl-color-text-secondary);
+  color: var(--ac-color-text-secondary);
 }
 
 .queue__empty-title {
-  font-size: var(--gl-font-size-lg);
-  color: var(--gl-color-text-primary);
-  margin-bottom: var(--gl-space-2);
+  font-size: var(--ac-font-size-lg);
+  color: var(--ac-color-text-primary);
+  margin-bottom: var(--ac-space-2);
 }
 
 .badge {
   display: inline-block;
-  padding: 2px var(--gl-space-2);
-  border-radius: var(--gl-radius-pill);
-  font-size: var(--gl-font-size-xs);
-  font-weight: var(--gl-font-weight-semibold);
+  padding: 2px var(--ac-space-2);
+  border-radius: var(--ac-radius-pill);
+  font-size: var(--ac-font-size-xs);
+  font-weight: var(--ac-font-weight-semibold);
 }
 
 .badge--critical {
-  background: var(--gl-color-status-critical-subtle);
-  color: var(--gl-color-status-critical);
+  background: var(--ac-color-status-critical-subtle);
+  color: var(--ac-color-status-critical);
 }
 .badge--high {
-  background: var(--gl-color-status-caution-subtle);
-  color: var(--gl-color-status-caution);
+  background: var(--ac-color-status-caution-subtle);
+  color: var(--ac-color-status-caution);
 }
 .badge--standard {
-  background: var(--gl-color-surface-sunken);
-  color: var(--gl-color-text-secondary);
+  background: var(--ac-color-surface-sunken);
+  color: var(--ac-color-text-secondary);
 }
 .badge--low {
-  background: var(--gl-color-surface-sunken);
-  color: var(--gl-color-status-neutral);
+  background: var(--ac-color-surface-sunken);
+  color: var(--ac-color-status-neutral);
 }
 .badge--safe {
-  background: var(--gl-color-status-safe-subtle);
-  color: var(--gl-color-status-safe);
+  background: var(--ac-color-status-safe-subtle);
+  color: var(--ac-color-status-safe);
 }
 
 .connection {
   display: flex;
   align-items: center;
-  gap: var(--gl-space-2);
-  font-size: var(--gl-font-size-sm);
+  gap: var(--ac-space-2);
+  font-size: var(--ac-font-size-sm);
   margin: 0;
 }
 
 .connection--live {
-  color: var(--gl-color-status-safe);
+  color: var(--ac-color-status-safe);
 }
 .connection--connecting,
 .connection--reconnecting {
-  color: var(--gl-color-status-caution);
+  color: var(--ac-color-status-caution);
 }
 .connection--offline {
-  color: var(--gl-color-status-critical);
-  font-weight: var(--gl-font-weight-semibold);
+  color: var(--ac-color-status-critical);
+  font-weight: var(--ac-font-weight-semibold);
 }
 
 .connection__dot {
@@ -280,7 +280,7 @@ body {
 @media (max-width: 768px) {
   .queue__item {
     grid-template-columns: 1fr;
-    gap: var(--gl-space-1);
+    gap: var(--ac-space-1);
   }
 }
 

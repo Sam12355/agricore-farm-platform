@@ -5,7 +5,7 @@ import {
   type LoginRequest,
   type RegisterRequest,
   defaultPrivacySettings,
-} from '@guardianlink/contracts';
+} from '@agricore/contracts';
 import {
   type Clock,
   DomainErrors,
@@ -15,7 +15,7 @@ import {
   days,
   err,
   ok,
-} from '@guardianlink/shared-types';
+} from '@agricore/shared-types';
 
 import { PORTS } from '../tokens';
 import type {
@@ -83,10 +83,10 @@ export class IdentityService {
     const defaults = defaultPrivacySettings(now.toISOString());
     await this.privacy.upsert({
       userId: user.id,
-      shareLocationWithContacts: defaults.shareLocationWithContacts,
-      shareLocationWithOperators: defaults.shareLocationWithOperators,
+      shareLocationWithWorkers: defaults.shareLocationWithWorkers,
+      shareLocationWithManagers: defaults.shareLocationWithManagers,
       storePreciseLocationHistory: defaults.storePreciseLocationHistory,
-      incidentRetentionDays: defaults.incidentRetentionDays,
+      alertRetentionDays: defaults.alertRetentionDays,
       locationRetentionDays: defaults.locationRetentionDays,
       notificationLogRetentionDays: defaults.notificationLogRetentionDays,
       allowAnonymisedProductAnalytics: defaults.allowAnonymisedProductAnalytics,

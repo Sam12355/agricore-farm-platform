@@ -6,14 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 ## [Unreleased]
 
 ### Added
-- Contact verification flow, so a notification cannot be sent to an unconfirmed address
+- Worker verification flow, so a notification cannot be sent to an unconfirmed address
 - Queued data export with a signed, expiring download link
 - Per-user retention sweeps rather than the single global floor
 
 ## [0.1.0] - 2026-03
 
-First complete vertical slice: SOS activation through to resolution, across mobile, backend,
-real-time and the operator console.
+First complete vertical slice: alert activation through to resolution, across mobile, backend,
+real-time and the manager console.
 
 ### Added
 
@@ -21,12 +21,12 @@ real-time and the operator console.
 - NestJS modular monolith on ports and adapters; every port has an in-memory adapter, so the whole
   test suite runs with no external services
 - Identity: registration, login, refresh-token rotation with family-wide revocation on reuse
-- Trusted contacts with entitlement-based limits enforced server side
-- Safety sessions with overdue detection
-- SOS countdown, cancellation, and idempotent activation
-- Incident aggregate: location recording, operator claim leases, notes, priority, contact
+- Assigned workers with entitlement-based limits enforced server side
+- Field operations with overdue detection
+- Alert countdown, cancellation, and idempotent activation
+- Alert aggregate: location recording, manager claim leases, notes, priority, worker
   acknowledgement, resolution
-- Append-only incident timeline with per-incident monotonic sequencing
+- Append-only alert timeline with per-alert monotonic sequencing
 - Transactional outbox with dedupe keys, retry with jittered backoff, and dead-lettering
 - Socket.IO gateway with per-subscription authorisation and gap replay on reconnect
 - Privacy: settings with enforced retention bounds, full data export, two-step deletion with a grace
@@ -73,4 +73,4 @@ Recorded because a changelog that only lists features is not a record of the wor
 ### Known limitations
 
 Full list in the README. The important ones: iOS was never compiled, Terraform was never validated
-locally or applied, contact verification is not implemented, and no screenshots have been captured.
+locally or applied, worker verification is not implemented, and no screenshots have been captured.

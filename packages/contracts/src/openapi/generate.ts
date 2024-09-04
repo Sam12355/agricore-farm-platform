@@ -10,7 +10,7 @@ import { buildOpenApiDocument } from './document';
  * request models from a file in the repository without standing the API up, and so a
  * change to the API surface shows up as a reviewable diff in a pull request.
  *
- *   pnpm --filter @guardianlink/contracts openapi
+ *   pnpm --filter @agricore/contracts openapi
  */
 function main(): void {
   const document = buildOpenApiDocument(process.env['APP_VERSION'] ?? '0.1.0');

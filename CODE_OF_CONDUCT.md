@@ -32,14 +32,14 @@ project.
 
 ## Reporting
 
-Open an issue, or contact the maintainer directly if it is not appropriate in public. Reports are
+Open an issue, or worker the maintainer directly if it is not appropriate in public. Reports are
 handled confidentially. This is a portfolio repository with one maintainer, so there is no committee
 and no formal process; there is just someone who will read it and act on it.
 
 ## Enforcement
 
 Warning, then temporary block, then permanent block, depending on severity and on whether it happens
-again. A single serious incident does not need to escalate through the earlier steps.
+again. A single serious alert does not need to escalate through the earlier steps.
 
 ## Attribution
 

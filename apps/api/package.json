@@ -1,8 +1,8 @@
 {
-  "name": "@guardianlink/api",
+  "name": "@agricore/api",
   "version": "0.1.0",
   "private": true,
-  "description": "GuardianLink backend. Modular monolith on NestJS with REST, GraphQL and Socket.IO.",
+  "description": "AgriCore backend. Modular monolith on NestJS with REST, GraphQL and Socket.IO.",
   "license": "MIT",
   "scripts": {
     "build": "nest build",
@@ -20,9 +20,9 @@
     "openapi:emit": "ts-node -T src/scripts/emit-openapi.ts"
   },
   "dependencies": {
-    "@guardianlink/contracts": "workspace:*",
-    "@guardianlink/shared-types": "workspace:*",
-    "@guardianlink/test-fixtures": "workspace:*",
+    "@agricore/contracts": "workspace:*",
+    "@agricore/shared-types": "workspace:*",
+    "@agricore/test-fixtures": "workspace:*",
     "@nestjs/common": "^10.4.15",
     "@nestjs/core": "^10.4.15",
     "@nestjs/platform-express": "^10.4.15",

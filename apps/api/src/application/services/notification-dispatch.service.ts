@@ -1,10 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
 
-import { DEMO_NOTICE_SHORT } from '@guardianlink/contracts';
+import { DEMO_NOTICE_SHORT } from '@agricore/contracts';
 import {
   type Clock,
   DeliveryStatus,
-  IncidentEventType,
+  AlertEventType,
   NotificationChannel,
   type Result,
   err,
@@ -12,14 +12,14 @@ import {
   ok,
   DomainErrors,
   type DomainError,
-} from '@guardianlink/shared-types';
+} from '@agricore/shared-types';
 
-import { pendingEvent } from '../../domain/incident/incident-events';
-import { OUTBOX_TOPIC_CONTACT_ALERT } from './sos.service';
+import { pendingEvent } from '../../domain/alert/alert-events';
+import { OUTBOX_TOPIC_CONTACT_ALERT } from './alert-trigger.service';
 import { PORTS } from '../tokens';
 import type {
   IdGenerator,
-  IncidentRepository,
+  AlertRepository,
   NotificationChannelAdapter,
   NotificationRecord,
   NotificationRepository,
@@ -27,11 +27,11 @@ import type {
   OutboxRepository,
   StructuredLogger,
   TokenService,
-  TrustedContactRepository,
+  WorkerRepository,
   UserRepository,
 } from '../ports';
 
-/** How long a contact has to acknowledge before the next one is brought in. */
+/** How long a worker has to acknowledge before the next one is brought in. */
 export const ESCALATION_WINDOW_MS = minutes(3);
 export const MAX_DELIVERY_ATTEMPTS = 5;
 
@@ -40,9 +40,9 @@ export const MAX_DELIVERY_ATTEMPTS = 5;
  *
  * Three things make this safe to run more than once, which matters because it will be:
  * a worker can crash after sending and before marking, a queue can deliver twice, and an
- * operator can replay a dead-lettered message by hand.
+ * manager can replay a dead-lettered message by hand.
  *
- *   1. Every delivery has a dedupe key of incident plus contact. The consumer checks it
+ *   1. Every delivery has a dedupe key of alert plus worker. The consumer checks it
  *      before sending, so a replay is a no-op rather than a second message to a person
  *      who is already worried.
  *   2. Retries use exponential backoff with jitter, and the schedule is computed from an
@@ -55,8 +55,8 @@ export class NotificationDispatchService {
   constructor(
     @Inject(PORTS.OutboxRepository) private readonly outbox: OutboxRepository,
     @Inject(PORTS.NotificationRepository) private readonly notifications: NotificationRepository,
-    @Inject(PORTS.TrustedContactRepository) private readonly contacts: TrustedContactRepository,
-    @Inject(PORTS.IncidentRepository) private readonly incidents: IncidentRepository,
+    @Inject(PORTS.WorkerRepository) private readonly workers: WorkerRepository,
+    @Inject(PORTS.AlertRepository) private readonly alerts: AlertRepository,
     @Inject(PORTS.UserRepository) private readonly users: UserRepository,
     @Inject(PORTS.TokenService) private readonly tokens: TokenService,
     @Inject(PORTS.NotificationChannels) private readonly channels: NotificationChannelAdapter[],
@@ -100,9 +100,9 @@ export class NotificationDispatchService {
       return err(DomainErrors.validation(`Unknown outbox topic ${message.topic}.`));
     }
 
-    const incidentId = String(message.payload['incidentId'] ?? '');
-    const contactId = String(message.payload['contactId'] ?? '');
-    const dedupeKey = message.dedupeKey ?? `${incidentId}:${contactId}`;
+    const alertId = String(message.payload['alertId'] ?? '');
+    const workerId = String(message.payload['workerId'] ?? '');
+    const dedupeKey = message.dedupeKey ?? `${alertId}:${workerId}`;
 
     const existing = await this.notifications.findByDedupeKey(dedupeKey);
     if (existing !== null && existing.status !== DeliveryStatus.Failed) {
@@ -111,18 +111,18 @@ export class NotificationDispatchService {
       return ok('deduplicated');
     }
 
-    const incident = await this.incidents.findById(incidentId);
-    if (incident === null) return err(DomainErrors.notFound('Incident'));
+    const alert = await this.alerts.findById(alertId);
+    if (alert === null) return err(DomainErrors.notFound('Alert'));
 
-    const contact = await this.contacts.findById(contactId);
-    if (contact === null) return err(DomainErrors.notFound('Trusted contact'));
+    const worker = await this.workers.findById(workerId);
+    if (worker === null) return err(DomainErrors.notFound('Assigned worker'));
 
-    const subject = await this.users.findById(incident.userId);
+    const subject = await this.users.findById(alert.userId);
     const subjectName = subject?.displayName.split(' ')[0] ?? 'Someone';
 
-    const channel = this.chooseChannel(contact.preferredChannel, contact.email, contact.phone);
+    const channel = this.chooseChannel(worker.preferredChannel, worker.email, worker.phone);
     if (channel === null) {
-      return err(DomainErrors.validation('That contact has no reachable channel.'));
+      return err(DomainErrors.validation('That worker has no reachable channel.'));
     }
 
     const adapter = this.channels.find((c) => c.channel === channel);
@@ -131,18 +131,18 @@ export class NotificationDispatchService {
     }
 
     const now = this.clock.now();
-    const viewToken = this.tokens.issueContactViewToken({
-      incidentId,
-      contactId,
-      // The link outlives the incident by a margin so a contact who opens it later still
+    const viewToken = this.tokens.issueWorkerViewToken({
+      alertId,
+      workerId,
+      // The link outlives the alert by a margin so a worker who opens it later still
       // sees the outcome instead of a dead page.
       ttlSeconds: 24 * 60 * 60,
     });
 
     const record: NotificationRecord = existing ?? {
       id: this.ids.next(),
-      incidentId,
-      contactId,
+      alertId,
+      workerId,
       channel,
       status: DeliveryStatus.Pending,
       attempts: 0,
@@ -156,10 +156,10 @@ export class NotificationDispatchService {
     await this.notifications.insert({ ...record, status: DeliveryStatus.Pending, updatedAt: now });
 
     const sent = await adapter.send({
-      to: { name: contact.name, email: contact.email, phone: contact.phone },
-      subject: `${subjectName} has raised a GuardianLink alert`,
-      body: this.composeBody(subjectName, incident.activatedAt),
-      linkUrl: `/contact-view/${viewToken}`,
+      to: { name: worker.name, email: worker.email, phone: worker.phone },
+      subject: `${subjectName} has raised an AgriCore alert`,
+      body: this.composeBody(subjectName, alert.activatedAt),
+      linkUrl: `/worker-view/${viewToken}`,
       correlationId: message.correlationId,
     });
 
@@ -182,18 +182,18 @@ export class NotificationDispatchService {
       updatedAt: this.clock.now(),
     });
 
-    // The timeline records that a contact was notified. It does not record the address
-    // or number that was used; the operator does not need it and the audit trail is a
+    // The timeline records that a worker was notified. It does not record the address
+    // or number that was used; the manager does not need it and the audit trail is a
     // long-lived store.
-    await this.incidents.save({
-      state: incident,
+    await this.alerts.save({
+      state: alert,
       events: [
-        pendingEvent(IncidentEventType.ContactNotified, 'system', null, this.clock.now(), {
-          contactId,
+        pendingEvent(AlertEventType.WorkerNotified, 'system', null, this.clock.now(), {
+          workerId,
           channel,
         }),
       ],
-      expectedVersion: incident.version,
+      expectedVersion: alert.version,
     });
 
     return ok('sent');
@@ -201,9 +201,9 @@ export class NotificationDispatchService {
 
   private composeBody(subjectName: string, activatedAt: Date): string {
     return [
-      `${subjectName} raised a GuardianLink alert at ${activatedAt.toISOString()}.`,
+      `${subjectName} raised an AgriCore alert at ${activatedAt.toISOString()}.`,
       '',
-      'Open the link below to see the latest status and let them know you have seen it.',
+      'Open the link below to see the latest status and mark that you have picked it up.',
       '',
       DEMO_NOTICE_SHORT,
     ].join('\n');
@@ -218,7 +218,7 @@ export class NotificationDispatchService {
     if (preferred === 'sms' && phone !== null) return NotificationChannel.Sms;
     if (preferred === 'push') return NotificationChannel.Push;
     // "any" prefers SMS: it arrives on a locked screen without an app installed, which
-    // is the situation most trusted contacts are actually in.
+    // is the situation most assigned workers are actually in.
     if (phone !== null) return NotificationChannel.Sms;
     if (email !== null) return NotificationChannel.Email;
     return null;
@@ -253,7 +253,7 @@ export class NotificationDispatchService {
         });
       }
       // No next attempt. The message stays in the outbox marked failed, with its history,
-      // so an operator can inspect and replay it deliberately.
+      // so a manager can inspect and replay it deliberately.
       await this.outbox.markFailed(message.id, error, now, null);
       this.logger.error('notification dead-lettered', {
         outboxId: message.id,
@@ -269,27 +269,27 @@ export class NotificationDispatchService {
   }
 
   /**
-   * Brings in the next contact when the current one has not acknowledged in time.
+   * Brings in the next worker when the current one has not acknowledged in time.
    *
    * Runs on a schedule. Returns the escalations it performed so the job can log a real
    * number rather than "done".
    */
-  async escalateStaleIncidents(limit = 50): Promise<{ escalated: number }> {
+  async escalateStaleAlerts(limit = 50): Promise<{ escalated: number }> {
     const now = this.clock.now();
-    const active = await this.incidents.query({ status: 'active' }, { limit });
+    const active = await this.alerts.query({ status: 'active' }, { limit });
 
     let escalated = 0;
-    for (const incident of active.items) {
-      if (incident.acknowledgedByContactId !== null) continue;
-      if (now.getTime() - incident.activatedAt.getTime() < ESCALATION_WINDOW_MS) continue;
+    for (const alert of active.items) {
+      if (alert.acknowledgedByWorkerId !== null) continue;
+      if (now.getTime() - alert.activatedAt.getTime() < ESCALATION_WINDOW_MS) continue;
 
-      const deliveries = await this.notifications.listForIncident(incident.id);
+      const deliveries = await this.notifications.listForAlert(alert.id);
       const anyAcknowledged = deliveries.some((d) => d.acknowledgedAt !== null);
       if (anyAcknowledged) continue;
 
-      const contacts = await this.contacts.listForUser(incident.userId);
-      const alreadyTried = new Set(deliveries.map((d) => d.contactId));
-      const next = contacts
+      const workers = await this.workers.listForUser(alert.userId);
+      const alreadyTried = new Set(deliveries.map((d) => d.workerId));
+      const next = workers
         .slice()
         .sort((a, b) => a.priority - b.priority)
         .find((c) => !alreadyTried.has(c.id));
@@ -298,22 +298,22 @@ export class NotificationDispatchService {
 
       await this.notifications.insert({
         id: this.ids.next(),
-        incidentId: incident.id,
-        contactId: next.id,
+        alertId: alert.id,
+        workerId: next.id,
         channel: NotificationChannel.Sms,
         status: DeliveryStatus.Pending,
         attempts: 0,
         lastError: null,
-        dedupeKey: `${incident.id}:${next.id}`,
+        dedupeKey: `${alert.id}:${next.id}`,
         createdAt: now,
         updatedAt: now,
         acknowledgedAt: null,
       });
 
       escalated += 1;
-      this.logger.info('escalated to next contact', {
-        incidentId: incident.id,
-        contactId: next.id,
+      this.logger.info('escalated to next worker', {
+        alertId: alert.id,
+        workerId: next.id,
       });
     }
 

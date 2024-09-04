@@ -30,10 +30,10 @@ terraform {
   # bucket and lock table are created by the bootstrap configuration.
   #
   # backend "s3" {
-  #   bucket         = "guardianlink-tfstate"
+  #   bucket         = "agricore-tfstate"
   #   key            = "dev/terraform.tfstate"
   #   region         = "eu-west-1"
-  #   dynamodb_table = "guardianlink-tflock"
+  #   dynamodb_table = "agricore-tflock"
   #   encrypt        = true
   # }
 }
@@ -43,7 +43,7 @@ provider "aws" {
 
   default_tags {
     tags = {
-      Project     = "guardianlink"
+      Project     = "agricore"
       Environment = "dev"
       ManagedBy   = "terraform"
       # Every resource carries this. A demonstration left running by accident should be
@@ -56,7 +56,7 @@ provider "aws" {
 data "aws_caller_identity" "current" {}
 
 locals {
-  name = "guardianlink-dev"
+  name = "agricore-dev"
 }
 
 # --- Networking ------------------------------------------------------------------------
@@ -246,8 +246,8 @@ resource "aws_db_instance" "postgres" {
   max_allocated_storage = 50
   storage_encrypted     = true
 
-  db_name  = "guardianlink"
-  username = "guardianlink"
+  db_name  = "agricore"
+  username = "agricore"
   # Generated and stored in Secrets Manager rather than passed in as a variable, so no
   # password value ever appears in a tfvars file or on a command line.
   manage_master_user_password = true

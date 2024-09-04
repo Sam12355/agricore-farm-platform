@@ -3,26 +3,26 @@ import { z } from 'zod';
 import { Limits, isoDateTimeSchema, uuidSchema } from './common';
 
 /**
- * Retention is user-controllable within bounds the operator of the service can defend.
- * The floors stop someone setting retention to zero and then asking why their incident
+ * Retention is user-controllable within bounds the manager of the service can defend.
+ * The floors stop someone setting retention to zero and then asking why their alert
  * history is empty; the ceilings stop the service hoarding location data indefinitely.
  */
 export const RetentionBounds = {
-  incidentDays: { min: 30, max: 1095, default: 365 },
+  alertDays: { min: 30, max: 1095, default: 365 },
   locationDays: { min: 1, max: 90, default: 30 },
   notificationLogDays: { min: 7, max: 365, default: 90 },
 } as const;
 
 export const privacySettingsSchema = z.object({
-  shareLocationWithContacts: z.boolean(),
-  shareLocationWithOperators: z.boolean(),
+  shareLocationWithWorkers: z.boolean(),
+  shareLocationWithManagers: z.boolean(),
   /** When false, only the district-level coarsened position is stored for analytics. */
   storePreciseLocationHistory: z.boolean(),
-  incidentRetentionDays: z
+  alertRetentionDays: z
     .number()
     .int()
-    .min(RetentionBounds.incidentDays.min)
-    .max(RetentionBounds.incidentDays.max),
+    .min(RetentionBounds.alertDays.min)
+    .max(RetentionBounds.alertDays.max),
   locationRetentionDays: z
     .number()
     .int()
@@ -61,7 +61,7 @@ export const dataExportStatusSchema = z.object({
 
 /**
  * Deletion is a two-step confirmation with a grace period, not a single button.
- * Accidentally deleting the account that holds your incident history is not something
+ * Accidentally deleting the account that holds your alert history is not something
  * a person should be able to do by mistyping.
  */
 export const requestAccountDeletionSchema = z.object({
@@ -88,10 +88,10 @@ export type AccountDeletionStatusDto = z.infer<typeof accountDeletionStatusSchem
 
 export function defaultPrivacySettings(updatedAt: string): PrivacySettingsDto {
   return {
-    shareLocationWithContacts: true,
-    shareLocationWithOperators: true,
+    shareLocationWithWorkers: true,
+    shareLocationWithManagers: true,
     storePreciseLocationHistory: false,
-    incidentRetentionDays: RetentionBounds.incidentDays.default,
+    alertRetentionDays: RetentionBounds.alertDays.default,
     locationRetentionDays: RetentionBounds.locationDays.default,
     notificationLogRetentionDays: RetentionBounds.notificationLogDays.default,
     allowAnonymisedProductAnalytics: false,

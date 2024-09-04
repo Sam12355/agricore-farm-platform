@@ -6,9 +6,9 @@ const nextConfig = {
   // The web tier imports Zod schemas and design tokens directly from the workspace
   // packages rather than through a published build, so Next has to transpile them.
   transpilePackages: [
-    '@guardianlink/contracts',
-    '@guardianlink/shared-types',
-    '@guardianlink/design-tokens',
+    '@agricore/contracts',
+    '@agricore/shared-types',
+    '@agricore/design-tokens',
   ],
 
   async headers() {
@@ -18,7 +18,7 @@ const nextConfig = {
         headers: [
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'X-Frame-Options', value: 'DENY' },
-          // A contact-view URL is a credential. Sending it in a Referer header to any
+          // A worker-view URL is a credential. Sending it in a Referer header to any
           // third-party resource on the page would leak it, so no referrer is sent at all.
           { key: 'Referrer-Policy', value: 'no-referrer' },
           {

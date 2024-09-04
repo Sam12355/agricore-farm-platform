@@ -11,7 +11,7 @@ import type { StructuredLogger } from '../../application/ports';
  *
  * So the rule here is that sensitive keys are redacted on the way out, at any depth,
  * regardless of what the caller passed. A developer logging an entire request body by
- * mistake is normal; that should be a redacted line, not an incident.
+ * mistake is normal; that should be a redacted line, not an alert.
  */
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';

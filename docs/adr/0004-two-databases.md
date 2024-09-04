@@ -12,25 +12,25 @@ is resume padding. Either there is a real reason or there should be one database
 
 PostgreSQL holds everything transactional and everything that has to be consistent. MongoDB holds
 only raw location telemetry and event snapshots, on a TTL index. Nothing in Mongo is needed to
-reconstruct an incident's state.
+reconstruct an alert's state.
 
 ## Why
 
 The location stream has a genuinely different shape from the rest of the data. It is append-only,
 write-heavy in bursts when an offline client flushes a backlog, never joined against anything,
-queried only as "all points for this incident in time order", and it expires on a schedule.
+queried only as "all points for this alert in time order", and it expires on a schedule.
 
 That is a document-store fit rather than a relational one. The TTL index is the part that matters
 most: expiry is enforced by the database rather than by a job that might not run. For the most
 sensitive data the product holds, that is worth something on its own.
 
-Everything else is relational and needs transactions. Incident, timeline and outbox rows commit
+Everything else is relational and needs transactions. Alert, timeline and outbox rows commit
 together or not at all. Ownership is a foreign key. The audit table needs rules rejecting UPDATE and
 DELETE. None of that belongs in a document store.
 
-The boundary sits where it does because of one rule: **if Mongo is unavailable, incidents still
-work.** The subject's last known position lives on the incident row in Postgres. Losing Mongo costs
-the detailed track on the operator's map. It does not cost the incident, the timeline, the
+The boundary sits where it does because of one rule: **if Mongo is unavailable, alerts still
+work.** The subject's last known position lives on the alert row in Postgres. Losing Mongo costs
+the detailed track on the manager's map. It does not cost the alert, the timeline, the
 notifications or the audit trail.
 
 ## Consequences

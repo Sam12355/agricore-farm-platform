@@ -1,24 +1,24 @@
 {
-  "name": "guardianlink-platform",
+  "name": "agricore-platform",
   "version": "0.1.0",
   "private": true,
-  "description": "GuardianLink - personal safety and trusted-contact platform. Portfolio demonstration, not a real emergency service.",
+  "description": "AgriCore - farm operations platform. Portfolio demonstration, not a working farm service.",
   "packageManager": "pnpm@9.15.4",
   "engines": {
     "node": ">=20.11.0"
   },
   "scripts": {
     "build:packages": "pnpm --filter \"./packages/**\" -r build",
-    "build": "pnpm build:packages && pnpm --filter @guardianlink/api build",
+    "build": "pnpm build:packages && pnpm --filter @agricore/api build",
     "typecheck": "pnpm build:packages && pnpm -r typecheck",
     "lint": "pnpm -r lint",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md,yml,yaml}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md,yml,yaml}\"",
     "test": "pnpm build:packages && pnpm -r test",
-    "test:api": "pnpm build:packages && pnpm --filter @guardianlink/api test",
-    "test:e2e": "pnpm build:packages && pnpm --filter @guardianlink/api test:e2e",
-    "dev": "pnpm --parallel --filter @guardianlink/api --filter @guardianlink/web dev",
-    "seed": "pnpm --filter @guardianlink/api seed",
+    "test:api": "pnpm build:packages && pnpm --filter @agricore/api test",
+    "test:e2e": "pnpm build:packages && pnpm --filter @agricore/api test:e2e",
+    "dev": "pnpm --parallel --filter @agricore/api --filter @agricore/web dev",
+    "seed": "pnpm --filter @agricore/api seed",
     "docker:up": "docker compose -f infrastructure/docker/docker-compose.yml up -d",
     "docker:down": "docker compose -f infrastructure/docker/docker-compose.yml down -v",
     "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test"

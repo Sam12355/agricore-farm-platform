@@ -1,12 +1,12 @@
 import type { ZodTypeAny } from 'zod';
 
 import {
-  acknowledgeIncidentSchema,
-  contactIncidentViewSchema,
-  createTrustedContactSchema,
-  trustedContactSchema,
-  updateTrustedContactSchema,
-} from '../contacts';
+  acknowledgeAlertSchema,
+  workerAlertViewSchema,
+  createWorkerSchema,
+  workerSchema,
+  updateWorkerSchema,
+} from '../workers';
 import {
   API_VERSION,
   errorResponseSchema,
@@ -20,22 +20,22 @@ import {
   registerRequestSchema,
 } from '../auth';
 import {
-  activateIncidentSchema,
-  addOperatorNoteSchema,
+  activateAlertSchema,
+  addManagerNoteSchema,
   changePrioritySchema,
-  claimIncidentSchema,
+  claimAlertSchema,
   cancelCountdownSchema,
   countdownSchema,
-  endSafetySessionSchema,
-  incidentSchema,
-  incidentTimelineSchema,
+  endFieldOperationSchema,
+  alertSchema,
+  alertTimelineSchema,
   locationBatchAcceptedSchema,
   recordLocationSchema,
-  resolveIncidentSchema,
-  safetySessionSchema,
+  resolveAlertSchema,
+  fieldOperationSchema,
   startCountdownSchema,
-  startSafetySessionSchema,
-} from '../incidents';
+  startFieldOperationSchema,
+} from '../alerts';
 import {
   accountDeletionStatusSchema,
   dataExportRequestSchema,
@@ -76,26 +76,26 @@ const COMPONENTS: Record<string, ZodTypeAny> = {
   LoginRequest: loginRequestSchema,
   RefreshRequest: refreshRequestSchema,
   AuthResponse: authResponseSchema,
-  CreateTrustedContact: createTrustedContactSchema,
-  UpdateTrustedContact: updateTrustedContactSchema,
-  TrustedContact: trustedContactSchema,
-  StartSafetySession: startSafetySessionSchema,
-  EndSafetySession: endSafetySessionSchema,
-  SafetySession: safetySessionSchema,
+  CreateWorker: createWorkerSchema,
+  UpdateWorker: updateWorkerSchema,
+  Worker: workerSchema,
+  StartFieldOperation: startFieldOperationSchema,
+  EndFieldOperation: endFieldOperationSchema,
+  FieldOperation: fieldOperationSchema,
   StartCountdown: startCountdownSchema,
   CancelCountdown: cancelCountdownSchema,
   Countdown: countdownSchema,
-  ActivateIncident: activateIncidentSchema,
-  Incident: incidentSchema,
-  IncidentTimeline: incidentTimelineSchema,
+  ActivateAlert: activateAlertSchema,
+  Alert: alertSchema,
+  AlertTimeline: alertTimelineSchema,
   RecordLocation: recordLocationSchema,
   LocationBatchAccepted: locationBatchAcceptedSchema,
-  ClaimIncident: claimIncidentSchema,
-  AddOperatorNote: addOperatorNoteSchema,
+  ClaimAlert: claimAlertSchema,
+  AddManagerNote: addManagerNoteSchema,
   ChangePriority: changePrioritySchema,
-  ResolveIncident: resolveIncidentSchema,
-  ContactIncidentView: contactIncidentViewSchema,
-  AcknowledgeIncident: acknowledgeIncidentSchema,
+  ResolveAlert: resolveAlertSchema,
+  WorkerAlertView: workerAlertViewSchema,
+  AcknowledgeAlert: acknowledgeAlertSchema,
   PrivacySettings: privacySettingsSchema,
   UpdatePrivacySettings: updatePrivacySettingsSchema,
   DataExportRequest: dataExportRequestSchema,
@@ -208,93 +208,93 @@ const PATHS: Record<string, Partial<Record<'get' | 'post' | 'patch' | 'delete', 
       responses: { '200': { description: 'Account details.' }, '401': errors['401'], '404': errors['404'] },
     },
   },
-  [`${base}/trusted-contacts`]: {
+  [`${base}/workers`]: {
     get: {
-      summary: 'List trusted contacts',
-      tags: ['Trusted contacts'],
+      summary: 'List assigned workers',
+      tags: ['Assigned workers'],
       security: bearer,
-      responses: { '200': { description: 'Contacts in priority order.', schema: 'TrustedContact' }, '401': errors['401'] },
+      responses: { '200': { description: 'Workers in priority order.', schema: 'Worker' }, '401': errors['401'] },
     },
     post: {
-      summary: 'Add a trusted contact',
-      description: 'The contact cap is an entitlement and is enforced server side.',
-      tags: ['Trusted contacts'],
+      summary: 'Add an assigned worker',
+      description: 'The worker cap is an entitlement and is enforced server side.',
+      tags: ['Assigned workers'],
       security: bearer,
-      requestBody: 'CreateTrustedContact',
+      requestBody: 'CreateWorker',
       responses: {
-        '201': { description: 'Contact added.', schema: 'TrustedContact' },
+        '201': { description: 'Worker added.', schema: 'Worker' },
         '400': errors['400'],
         '401': errors['401'],
-        '412': { description: 'The plan does not allow another contact.', schema: 'ErrorResponse' },
+        '412': { description: 'The plan does not allow another worker.', schema: 'ErrorResponse' },
       },
     },
   },
-  [`${base}/trusted-contacts/{id}`]: {
+  [`${base}/workers/{id}`]: {
     patch: {
-      summary: 'Update a trusted contact',
-      tags: ['Trusted contacts'],
+      summary: 'Update an assigned worker',
+      tags: ['Assigned workers'],
       security: bearer,
-      parameters: [idParam('id', 'Trusted contact identifier.')],
-      requestBody: 'UpdateTrustedContact',
-      responses: { '200': { description: 'Updated.', schema: 'TrustedContact' }, '404': errors['404'] },
+      parameters: [idParam('id', 'Assigned worker identifier.')],
+      requestBody: 'UpdateWorker',
+      responses: { '200': { description: 'Updated.', schema: 'Worker' }, '404': errors['404'] },
     },
     delete: {
-      summary: 'Remove a trusted contact',
-      description: 'Soft delete, so a past incident timeline still resolves the contact.',
-      tags: ['Trusted contacts'],
+      summary: 'Remove an assigned worker',
+      description: 'Soft delete, so a past alert timeline still resolves the worker.',
+      tags: ['Assigned workers'],
       security: bearer,
-      parameters: [idParam('id', 'Trusted contact identifier.')],
+      parameters: [idParam('id', 'Assigned worker identifier.')],
       responses: { '204': { description: 'Removed.' }, '404': errors['404'] },
     },
   },
-  [`${base}/safety-sessions`]: {
+  [`${base}/field-operations`]: {
     get: {
-      summary: 'List safety sessions',
-      tags: ['Safety sessions'],
+      summary: 'List field operations',
+      tags: ['Field operations'],
       security: bearer,
-      responses: { '200': { description: 'Sessions, newest first.', schema: 'SafetySession' } },
+      responses: { '200': { description: 'Sessions, newest first.', schema: 'FieldOperation' } },
     },
     post: {
-      summary: 'Start a safety session',
+      summary: 'Start a field operation',
       description: 'One active session per user, enforced by a unique partial index.',
-      tags: ['Safety sessions'],
+      tags: ['Field operations'],
       security: bearer,
-      requestBody: 'StartSafetySession',
+      requestBody: 'StartFieldOperation',
       responses: {
-        '201': { description: 'Session started.', schema: 'SafetySession' },
+        '201': { description: 'Session started.', schema: 'FieldOperation' },
         '409': { description: 'A session is already running.', schema: 'ErrorResponse' },
       },
     },
   },
-  [`${base}/safety-sessions/{id}/end`]: {
+  [`${base}/field-operations/{id}/end`]: {
     post: {
-      summary: 'End a safety session',
-      tags: ['Safety sessions'],
+      summary: 'End a field operation',
+      tags: ['Field operations'],
       security: bearer,
       parameters: [idParam('id', 'Session identifier.')],
-      requestBody: 'EndSafetySession',
-      responses: { '200': { description: 'Session ended.', schema: 'SafetySession' }, '404': errors['404'] },
+      requestBody: 'EndFieldOperation',
+      responses: { '200': { description: 'Session ended.', schema: 'FieldOperation' }, '404': errors['404'] },
     },
   },
-  [`${base}/sos/countdown`]: {
+  [`${base}/alerts/countdown`]: {
     post: {
-      summary: 'Start an SOS countdown',
+      summary: 'Start an Alert countdown',
       description:
         'The activation idempotency key is minted here rather than at activation, so a client ' +
         'that crashes mid-countdown still deduplicates when it restarts and retries.',
-      tags: ['SOS'],
+      tags: ['Alerts'],
       security: bearer,
       requestBody: 'StartCountdown',
       responses: { '201': { description: 'Countdown started.', schema: 'Countdown' }, '400': errors['400'] },
     },
   },
-  [`${base}/sos/countdown/{id}/cancel`]: {
+  [`${base}/alerts/countdown/{id}/cancel`]: {
     post: {
       summary: 'Cancel a countdown',
       description:
         'Cancelling twice is success. Cancelling after expiry is 412: the alert is going out and ' +
-        'the user is told so, rather than being shown a cancelled screen while contacts are messaged.',
-      tags: ['SOS'],
+        'the user is told so, rather than being shown a cancelled screen while workers are messaged.',
+      tags: ['Alerts'],
       security: bearer,
       parameters: [idParam('id', 'Countdown identifier.')],
       requestBody: 'CancelCountdown',
@@ -306,52 +306,52 @@ const PATHS: Record<string, Partial<Record<'get' | 'post' | 'patch' | 'delete', 
       },
     },
   },
-  [`${base}/sos/activate`]: {
+  [`${base}/alerts/activate`]: {
     post: {
-      summary: 'Raise an incident',
+      summary: 'Raise an alert',
       description:
         'Idempotent, and the key is mandatory. Deduplicated at this layer against a stored ' +
         'response and again at the database with a unique index, which covers two concurrent ' +
         'retries that both miss the store.',
-      tags: ['SOS'],
+      tags: ['Alerts'],
       security: bearer,
       parameters: [idempotencyHeader],
-      requestBody: 'ActivateIncident',
+      requestBody: 'ActivateAlert',
       responses: {
-        '201': { description: 'Incident raised.', schema: 'Incident' },
-        '200': { description: 'Replay of an earlier activation. Same incident.', schema: 'Incident' },
+        '201': { description: 'Alert raised.', schema: 'Alert' },
+        '200': { description: 'Replay of an earlier activation. Same alert.', schema: 'Alert' },
         '400': { description: 'Missing or malformed Idempotency-Key, or invalid body.', schema: 'ErrorResponse' },
         '409': { description: 'The key was used with a different body.', schema: 'ErrorResponse' },
         '422': { description: 'The countdown was cancelled.', schema: 'ErrorResponse' },
       },
     },
   },
-  [`${base}/incidents`]: {
+  [`${base}/alerts`]: {
     get: {
-      summary: 'List incidents',
-      description: 'Scoped to the caller unless they are an operator or an admin.',
-      tags: ['Incidents'],
+      summary: 'List alerts',
+      description: 'Scoped to the caller unless they are a manager or an admin.',
+      tags: ['Alerts'],
       security: bearer,
-      responses: { '200': { description: 'A page of incidents.', schema: 'Incident' }, '401': errors['401'] },
+      responses: { '200': { description: 'A page of alerts.', schema: 'Alert' }, '401': errors['401'] },
     },
   },
-  [`${base}/incidents/{id}`]: {
+  [`${base}/alerts/{id}`]: {
     get: {
-      summary: 'Read an incident',
-      tags: ['Incidents'],
+      summary: 'Read an alert',
+      tags: ['Alerts'],
       security: bearer,
-      parameters: [idParam('id', 'Incident identifier.')],
-      responses: { '200': { description: 'The incident.', schema: 'Incident' }, '404': errors['404'] },
+      parameters: [idParam('id', 'Alert identifier.')],
+      responses: { '200': { description: 'The alert.', schema: 'Alert' }, '404': errors['404'] },
     },
   },
-  [`${base}/incidents/{id}/timeline`]: {
+  [`${base}/alerts/{id}/timeline`]: {
     get: {
-      summary: 'Read the incident timeline',
+      summary: 'Read the alert timeline',
       description: 'Append-only, ordered by sequence. Pass `after` to fetch only what is new.',
-      tags: ['Incidents'],
+      tags: ['Alerts'],
       security: bearer,
       parameters: [
-        idParam('id', 'Incident identifier.'),
+        idParam('id', 'Alert identifier.'),
         {
           name: 'after',
           in: 'query',
@@ -360,119 +360,119 @@ const PATHS: Record<string, Partial<Record<'get' | 'post' | 'patch' | 'delete', 
           schema: { type: 'integer', minimum: 0 },
         },
       ],
-      responses: { '200': { description: 'Incident and events.', schema: 'IncidentTimeline' }, '404': errors['404'] },
+      responses: { '200': { description: 'Alert and events.', schema: 'AlertTimeline' }, '404': errors['404'] },
     },
   },
-  [`${base}/incidents/{id}/location`]: {
+  [`${base}/alerts/{id}/location`]: {
     post: {
       summary: 'Record location',
       description:
-        'Accepted only from the subject and only while the incident is open, so every point on ' +
-        'the operator map came from the device that was there. Batched so an offline client can ' +
+        'Accepted only from the subject and only while the alert is open, so every point on ' +
+        'the manager map came from the device that was there. Batched so an offline client can ' +
         'flush a backlog in one request.',
-      tags: ['Incidents'],
+      tags: ['Alerts'],
       security: bearer,
-      parameters: [idParam('id', 'Incident identifier.')],
+      parameters: [idParam('id', 'Alert identifier.')],
       requestBody: 'RecordLocation',
       responses: {
         '202': { description: 'Accepted.', schema: 'LocationBatchAccepted' },
         '403': { description: 'Only the subject may share location.', schema: 'ErrorResponse' },
-        '422': { description: 'The incident is closed.', schema: 'ErrorResponse' },
+        '422': { description: 'The alert is closed.', schema: 'ErrorResponse' },
       },
     },
   },
-  [`${base}/incidents/{id}/claim`]: {
+  [`${base}/alerts/{id}/claim`]: {
     post: {
-      summary: 'Claim an incident',
-      description: 'Operators only. The claim is a five-minute lease and expires on its own.',
-      tags: ['Operator'],
+      summary: 'Claim an alert',
+      description: 'Managers only. The claim is a five-minute lease and expires on its own.',
+      tags: ['Manager'],
       security: bearer,
-      parameters: [idParam('id', 'Incident identifier.')],
-      requestBody: 'ClaimIncident',
+      parameters: [idParam('id', 'Alert identifier.')],
+      requestBody: 'ClaimAlert',
       responses: {
-        '200': { description: 'Claimed.', schema: 'Incident' },
+        '200': { description: 'Claimed.', schema: 'Alert' },
         '403': errors['403'],
-        '409': { description: 'Held by another operator, or the version is stale.', schema: 'ErrorResponse' },
+        '409': { description: 'Held by another manager, or the version is stale.', schema: 'ErrorResponse' },
       },
     },
   },
-  [`${base}/incidents/{id}/release`]: {
+  [`${base}/alerts/{id}/release`]: {
     post: {
       summary: 'Release a claim',
       description:
         'Only the holder may release. Releasing an already-lapsed lease is success, because the ' +
-        'operator intent is already satisfied.',
-      tags: ['Operator'],
+        'manager intent is already satisfied.',
+      tags: ['Manager'],
       security: bearer,
-      parameters: [idParam('id', 'Incident identifier.')],
-      requestBody: 'ClaimIncident',
+      parameters: [idParam('id', 'Alert identifier.')],
+      requestBody: 'ClaimAlert',
       responses: {
-        '200': { description: 'Released.', schema: 'Incident' },
+        '200': { description: 'Released.', schema: 'Alert' },
         '403': { description: 'You do not hold the claim.', schema: 'ErrorResponse' },
         '409': errors['409'],
       },
     },
   },
-  [`${base}/incidents/{id}/notes`]: {
+  [`${base}/alerts/{id}/notes`]: {
     post: {
-      summary: 'Add an operator note',
-      tags: ['Operator'],
+      summary: 'Add a manager note',
+      tags: ['Manager'],
       security: bearer,
-      parameters: [idParam('id', 'Incident identifier.')],
-      requestBody: 'AddOperatorNote',
-      responses: { '201': { description: 'Note added.', schema: 'Incident' }, '409': errors['409'] },
+      parameters: [idParam('id', 'Alert identifier.')],
+      requestBody: 'AddManagerNote',
+      responses: { '201': { description: 'Note added.', schema: 'Alert' }, '409': errors['409'] },
     },
   },
-  [`${base}/incidents/{id}/priority`]: {
+  [`${base}/alerts/{id}/priority`]: {
     post: {
-      summary: 'Change incident priority',
-      tags: ['Operator'],
+      summary: 'Change alert priority',
+      tags: ['Manager'],
       security: bearer,
-      parameters: [idParam('id', 'Incident identifier.')],
+      parameters: [idParam('id', 'Alert identifier.')],
       requestBody: 'ChangePriority',
-      responses: { '200': { description: 'Priority changed.', schema: 'Incident' }, '409': errors['409'] },
+      responses: { '200': { description: 'Priority changed.', schema: 'Alert' }, '409': errors['409'] },
     },
   },
-  [`${base}/incidents/{id}/resolve`]: {
+  [`${base}/alerts/{id}/resolve`]: {
     post: {
-      summary: 'Resolve an incident',
+      summary: 'Resolve an alert',
       description:
-        'Open to the subject and to the claiming operator. An operator without the claim is ' +
+        'Open to the subject and to the claiming manager. A manager without the claim is ' +
         'refused, so the timeline never records a resolution by somebody who was not working it.',
-      tags: ['Incidents'],
+      tags: ['Alerts'],
       security: bearer,
-      parameters: [idParam('id', 'Incident identifier.')],
-      requestBody: 'ResolveIncident',
-      responses: { '200': { description: 'Resolved.', schema: 'Incident' }, '409': errors['409'] },
+      parameters: [idParam('id', 'Alert identifier.')],
+      requestBody: 'ResolveAlert',
+      responses: { '200': { description: 'Resolved.', schema: 'Alert' }, '409': errors['409'] },
     },
   },
-  [`${base}/contact-view/{token}`]: {
+  [`${base}/worker-view/{token}`]: {
     get: {
-      summary: 'What a trusted contact sees',
+      summary: 'What an assigned worker sees',
       description:
-        'No account. The signed token in the path is the credential: one incident, one contact, ' +
+        'No account. The signed token in the path is the credential: one alert, one worker, ' +
         'time-boxed, carrying no role and no user id.',
-      tags: ['Trusted contact'],
+      tags: ['Assigned worker'],
       parameters: [
         {
           name: 'token',
           in: 'path',
           required: true,
-          description: 'Signed, single-incident, single-contact view token.',
+          description: 'Signed, single-alert, single-worker view token.',
           schema: { type: 'string' },
         },
       ],
       responses: {
-        '200': { description: 'A trimmed incident projection.', schema: 'ContactIncidentView' },
+        '200': { description: 'A trimmed alert projection.', schema: 'WorkerAlertView' },
         '401': { description: 'The link is not valid or has expired.', schema: 'ErrorResponse' },
       },
     },
   },
-  [`${base}/contact-view/{token}/acknowledge`]: {
+  [`${base}/worker-view/{token}/acknowledge`]: {
     post: {
-      summary: 'Acknowledge as a trusted contact',
-      description: 'Idempotent. A contact will tap the link twice, from two devices, at 2am.',
-      tags: ['Trusted contact'],
+      summary: 'Acknowledge as an assigned worker',
+      description: 'Idempotent. A worker will tap the link twice, from two devices, at 2am.',
+      tags: ['Assigned worker'],
       parameters: [
         {
           name: 'token',
@@ -482,8 +482,8 @@ const PATHS: Record<string, Partial<Record<'get' | 'post' | 'patch' | 'delete', 
           schema: { type: 'string' },
         },
       ],
-      requestBody: 'AcknowledgeIncident',
-      responses: { '200': { description: 'Acknowledged.', schema: 'ContactIncidentView' } },
+      requestBody: 'AcknowledgeAlert',
+      responses: { '200': { description: 'Acknowledged.', schema: 'WorkerAlertView' } },
     },
   },
   [`${base}/privacy/settings`]: {
@@ -577,9 +577,9 @@ const PATHS: Record<string, Partial<Record<'get' | 'post' | 'patch' | 'delete', 
     get: {
       summary: 'List accounts',
       description:
-        'Admins only, and deliberately thin: identity and deletion state, no incidents, no ' +
-        'contacts, no location. An admin role exists to answer "who did what", not to be a ' +
-        'second operator console with fewer restrictions.',
+        'Admins only, and deliberately thin: identity and deletion state, no alerts, no ' +
+        'workers, no location. An admin role exists to answer "who did what", not to be a ' +
+        'second manager console with fewer restrictions.',
       tags: ['Administration'],
       security: bearer,
       responses: { '200': { description: 'A page of accounts.' }, '403': errors['403'] },
@@ -671,7 +671,7 @@ export function buildOpenApiDocument(version = '0.1.0'): Record<string, unknown>
   return {
     openapi: '3.1.0',
     info: {
-      title: 'GuardianLink API',
+      title: 'AgriCore API',
       version,
       description: `${DEMO_NOTICE_FULL}\n\nEvery schema in this document is generated from the Zod schemas in packages/contracts, which are the same definitions the server validates against.`,
       license: { name: 'MIT' },
@@ -679,12 +679,12 @@ export function buildOpenApiDocument(version = '0.1.0'): Record<string, unknown>
     servers: [{ url: 'http://localhost:3001', description: 'Local development' }],
     tags: [
       { name: 'Identity', description: 'Registration, sign-in, token rotation' },
-      { name: 'Trusted contacts', description: 'The people notified during an incident' },
-      { name: 'Safety sessions', description: 'Planned journeys with an expected end time' },
-      { name: 'SOS', description: 'Countdown, cancellation and activation' },
-      { name: 'Incidents', description: 'Timeline, location and resolution' },
-      { name: 'Operator', description: 'Claim, notes and priority. Operators only' },
-      { name: 'Trusted contact', description: 'The credential-free contact view' },
+      { name: 'Assigned workers', description: 'The people notified during an alert' },
+      { name: 'Field operations', description: 'Planned journeys with an expected end time' },
+      { name: 'Alerts', description: 'Countdown, cancellation and activation' },
+      { name: 'Alerts', description: 'Timeline, location and resolution' },
+      { name: 'Manager', description: 'Claim, notes and priority. Managers only' },
+      { name: 'Assigned worker', description: 'The credential-free worker view' },
       { name: 'Privacy', description: 'Settings, export and deletion' },
       { name: 'Subscriptions', description: 'Store-verified entitlements' },
       { name: 'Administration', description: 'Audit log. Admins only' },

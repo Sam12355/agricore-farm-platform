@@ -19,7 +19,7 @@ export const registerRequestSchema = z.object({
   displayName: z.string().trim().min(1).max(Limits.displayName),
   acceptedDemoNotice: z.literal(true, {
     errorMap: () => ({
-      message: 'You must acknowledge that GuardianLink is a demonstration, not an emergency service.',
+      message: 'You must acknowledge that AgriCore is a demonstration, not a working farm operations service.',
     }),
   }),
 });
@@ -38,7 +38,7 @@ export const logoutRequestSchema = z.object({
   refreshToken: z.string().min(20).max(512),
 });
 
-export const userRoleSchema = z.enum(['user', 'operator', 'admin']);
+export const userRoleSchema = z.enum(['user', 'manager', 'admin']);
 
 export const authenticatedUserSchema = z.object({
   id: uuidSchema,
