@@ -1,4 +1,4 @@
-# Local GuardianLink stack.
+# Local AgriCore stack.
 #
 #   docker compose -f infrastructure/docker/docker-compose.yml up -d
 #
@@ -14,15 +14,15 @@
 # You do not need any of it to run the tests. The default adapters are in-memory and
 # `pnpm test` touches none of these services. This is here for driving the demo.
 
-name: guardianlink
+name: agricore
 
 services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: guardianlink
-      POSTGRES_PASSWORD: guardianlink
-      POSTGRES_DB: guardianlink
+      POSTGRES_USER: agricore
+      POSTGRES_PASSWORD: agricore
+      POSTGRES_DB: agricore
     ports:
       - '5432:5432'
     volumes:
@@ -31,7 +31,7 @@ services:
       # the migration runner, not by this mount.
       - ../../apps/api/migrations:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U guardianlink -d guardianlink']
+      test: ['CMD-SHELL', 'pg_isready -U agricore -d agricore']
       interval: 5s
       timeout: 3s
       retries: 20
@@ -110,18 +110,18 @@ services:
       # file ever sees a token signed with them.
       JWT_ACCESS_SECRET: local-development-access-secret-not-for-any-real-use
       JWT_REFRESH_SECRET: local-development-refresh-secret-not-for-any-real-use
-      JWT_CONTACT_VIEW_SECRET: local-development-contact-secret-not-for-any-real-use
+      JWT_WORKER_VIEW_SECRET: local-development-worker-secret-not-for-any-real-use
       PERSISTENCE: postgres
-      DATABASE_URL: postgres://guardianlink:guardianlink@postgres:5432/guardianlink
+      DATABASE_URL: postgres://agricore:agricore@postgres:5432/agricore
       TELEMETRY_STORE: mongodb
-      MONGODB_URI: mongodb://mongodb:27017/guardianlink
+      MONGODB_URI: mongodb://mongodb:27017/agricore
       CACHE: redis
       REDIS_URL: redis://redis:6379
       NOTIFICATION_TRANSPORT: inprocess
       EMAIL_PROVIDER: smtp
       SMTP_URL: smtp://mailhog:1025
       OBJECT_STORE: s3
-      S3_BUCKET: guardianlink-local
+      S3_BUCKET: agricore-local
       AWS_ENDPOINT_URL: http://localstack:4566
       AWS_REGION: eu-west-1
       CORS_ALLOWED_ORIGINS: http://localhost:3000

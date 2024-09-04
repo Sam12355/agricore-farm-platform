@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 
-import { ENTITLEMENTS, type EntitlementDto, type VerifyPurchaseRequest } from '@guardianlink/contracts';
+import { ENTITLEMENTS, type EntitlementDto, type VerifyPurchaseRequest } from '@agricore/contracts';
 import {
   type Clock,
   DomainErrors,
@@ -10,7 +10,7 @@ import {
   SubscriptionTier,
   err,
   ok,
-} from '@guardianlink/shared-types';
+} from '@agricore/shared-types';
 
 import { PORTS } from '../tokens';
 import type {
@@ -45,10 +45,10 @@ export class SubscriptionService {
 
   /** Product id to tier. Server-side, so a client cannot name its own tier. */
   private static readonly PRODUCT_TIERS: Record<string, SubscriptionTier> = {
-    'com.guardianlink.plus.monthly': SubscriptionTier.Plus,
-    'com.guardianlink.plus.yearly': SubscriptionTier.Plus,
-    'com.guardianlink.family.monthly': SubscriptionTier.Family,
-    'com.guardianlink.family.yearly': SubscriptionTier.Family,
+    'com.agricore.plus.monthly': SubscriptionTier.Plus,
+    'com.agricore.plus.yearly': SubscriptionTier.Plus,
+    'com.agricore.team.monthly': SubscriptionTier.Team,
+    'com.agricore.team.yearly': SubscriptionTier.Team,
   };
 
   async current(userId: string): Promise<SubscriptionRecord> {

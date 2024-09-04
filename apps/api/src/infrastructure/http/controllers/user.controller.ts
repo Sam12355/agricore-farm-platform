@@ -13,29 +13,29 @@ import {
 import {
   API_VERSION,
   DEMO_NOTICE_FULL,
-  createTrustedContactSchema,
+  createWorkerSchema,
   dataExportRequestSchema,
-  endSafetySessionSchema,
+  endFieldOperationSchema,
   requestAccountDeletionSchema,
-  startSafetySessionSchema,
+  startFieldOperationSchema,
   updatePrivacySettingsSchema,
-  updateTrustedContactSchema,
-  type CreateTrustedContactRequest,
+  updateWorkerSchema,
+  type CreateWorkerRequest,
   type DataExportRequest,
-  type EndSafetySessionRequest,
+  type EndFieldOperationRequest,
   type RequestAccountDeletion,
-  type StartSafetySessionRequest,
+  type StartFieldOperationRequest,
   type UpdatePrivacySettingsRequest,
-  type UpdateTrustedContactRequest,
-} from '@guardianlink/contracts';
+  type UpdateWorkerRequest,
+} from '@agricore/contracts';
 
 import { PrivacyService } from '../../../application/services/privacy.service';
-import { SafetySessionService } from '../../../application/services/safety-session.service';
-import { TrustedContactService } from '../../../application/services/trusted-contact.service';
+import { FieldOperationService } from '../../../application/services/field-operation.service';
+import { WorkerService } from '../../../application/services/worker.service';
 import {
   toPrivacySettingsDto,
-  toSafetySessionDto,
-  toTrustedContactDto,
+  toFieldOperationDto,
+  toWorkerDto,
 } from '../dto-mappers';
 import {
   CorrelationId,
@@ -46,14 +46,14 @@ import {
   type AuthenticatedRequest,
 } from '../http-plumbing';
 
-@Controller(`api/${API_VERSION}/trusted-contacts`)
-export class TrustedContactController {
-  constructor(private readonly contacts: TrustedContactService) {}
+@Controller(`api/${API_VERSION}/workers`)
+export class WorkerController {
+  constructor(private readonly workers: WorkerService) {}
 
   @Get()
   async list(@CurrentUser() user: NonNullable<AuthenticatedRequest['auth']>) {
-    const records = await this.contacts.list(user.userId);
-    return { items: records.map(toTrustedContactDto), nextCursor: null, hasMore: false };
+    const records = await this.workers.list(user.userId);
+    return { items: records.map(toWorkerDto), nextCursor: null, hasMore: false };
   }
 
   @Post()
@@ -61,24 +61,24 @@ export class TrustedContactController {
   @RateLimit({ limit: 60, windowSeconds: 60, by: 'subject' })
   async create(
     @CurrentUser() user: NonNullable<AuthenticatedRequest['auth']>,
-    @Body(new ZodValidationPipe(createTrustedContactSchema)) body: CreateTrustedContactRequest,
+    @Body(new ZodValidationPipe(createWorkerSchema)) body: CreateWorkerRequest,
     @CorrelationId() correlationId: string,
   ) {
-    const result = await this.contacts.create(user.userId, body);
+    const result = await this.workers.create(user.userId, body);
     if (!result.ok) throwDomain(result.error, correlationId);
-    return toTrustedContactDto(result.value);
+    return toWorkerDto(result.value);
   }
 
   @Patch(':id')
   async update(
     @Param('id') id: string,
     @CurrentUser() user: NonNullable<AuthenticatedRequest['auth']>,
-    @Body(new ZodValidationPipe(updateTrustedContactSchema)) body: UpdateTrustedContactRequest,
+    @Body(new ZodValidationPipe(updateWorkerSchema)) body: UpdateWorkerRequest,
     @CorrelationId() correlationId: string,
   ) {
-    const result = await this.contacts.update(user.userId, id, body);
+    const result = await this.workers.update(user.userId, id, body);
     if (!result.ok) throwDomain(result.error, correlationId);
-    return toTrustedContactDto(result.value);
+    return toWorkerDto(result.value);
   }
 
   @Delete(':id')
@@ -88,14 +88,14 @@ export class TrustedContactController {
     @CurrentUser() user: NonNullable<AuthenticatedRequest['auth']>,
     @CorrelationId() correlationId: string,
   ) {
-    const result = await this.contacts.remove(user.userId, id);
+    const result = await this.workers.remove(user.userId, id);
     if (!result.ok) throwDomain(result.error, correlationId);
   }
 }
 
-@Controller(`api/${API_VERSION}/safety-sessions`)
-export class SafetySessionController {
-  constructor(private readonly sessions: SafetySessionService) {}
+@Controller(`api/${API_VERSION}/field-operations`)
+export class FieldOperationController {
+  constructor(private readonly sessions: FieldOperationService) {}
 
   @Get()
   async list(
@@ -105,7 +105,7 @@ export class SafetySessionController {
   ) {
     const page = await this.sessions.list(user.userId, limit ? Number(limit) : undefined, cursor);
     return {
-      items: page.items.map(toSafetySessionDto),
+      items: page.items.map(toFieldOperationDto),
       nextCursor: page.nextCursor,
       hasMore: page.hasMore,
     };
@@ -115,12 +115,12 @@ export class SafetySessionController {
   @HttpCode(201)
   async start(
     @CurrentUser() user: NonNullable<AuthenticatedRequest['auth']>,
-    @Body(new ZodValidationPipe(startSafetySessionSchema)) body: StartSafetySessionRequest,
+    @Body(new ZodValidationPipe(startFieldOperationSchema)) body: StartFieldOperationRequest,
     @CorrelationId() correlationId: string,
   ) {
     const result = await this.sessions.start(user.userId, body);
     if (!result.ok) throwDomain(result.error, correlationId);
-    return toSafetySessionDto(result.value);
+    return toFieldOperationDto(result.value);
   }
 
   @Post(':id/end')
@@ -128,12 +128,12 @@ export class SafetySessionController {
   async end(
     @Param('id') id: string,
     @CurrentUser() user: NonNullable<AuthenticatedRequest['auth']>,
-    @Body(new ZodValidationPipe(endSafetySessionSchema)) body: EndSafetySessionRequest,
+    @Body(new ZodValidationPipe(endFieldOperationSchema)) body: EndFieldOperationRequest,
     @CorrelationId() correlationId: string,
   ) {
     const result = await this.sessions.end(user.userId, id, body);
     if (!result.ok) throwDomain(result.error, correlationId);
-    return toSafetySessionDto(result.value);
+    return toFieldOperationDto(result.value);
   }
 }
 

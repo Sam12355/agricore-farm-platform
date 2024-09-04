@@ -18,39 +18,39 @@ export const Routes = {
     me: `${base}/auth/me`,
   },
 
-  contacts: {
-    collection: `${base}/trusted-contacts`,
-    item: (id: string) => `${base}/trusted-contacts/${id}`,
+  workers: {
+    collection: `${base}/workers`,
+    item: (id: string) => `${base}/workers/${id}`,
   },
 
   sessions: {
-    collection: `${base}/safety-sessions`,
-    item: (id: string) => `${base}/safety-sessions/${id}`,
-    end: (id: string) => `${base}/safety-sessions/${id}/end`,
+    collection: `${base}/field-operations`,
+    item: (id: string) => `${base}/field-operations/${id}`,
+    end: (id: string) => `${base}/field-operations/${id}/end`,
   },
 
   countdown: {
-    start: `${base}/sos/countdown`,
-    cancel: (id: string) => `${base}/sos/countdown/${id}/cancel`,
-    activate: `${base}/sos/activate`,
+    start: `${base}/alerts/countdown`,
+    cancel: (id: string) => `${base}/alerts/countdown/${id}/cancel`,
+    activate: `${base}/alerts/activate`,
   },
 
-  incidents: {
-    collection: `${base}/incidents`,
-    item: (id: string) => `${base}/incidents/${id}`,
-    timeline: (id: string) => `${base}/incidents/${id}/timeline`,
-    location: (id: string) => `${base}/incidents/${id}/location`,
-    claim: (id: string) => `${base}/incidents/${id}/claim`,
-    release: (id: string) => `${base}/incidents/${id}/release`,
-    notes: (id: string) => `${base}/incidents/${id}/notes`,
-    priority: (id: string) => `${base}/incidents/${id}/priority`,
-    resolve: (id: string) => `${base}/incidents/${id}/resolve`,
+  alerts: {
+    collection: `${base}/alerts`,
+    item: (id: string) => `${base}/alerts/${id}`,
+    timeline: (id: string) => `${base}/alerts/${id}/timeline`,
+    location: (id: string) => `${base}/alerts/${id}/location`,
+    claim: (id: string) => `${base}/alerts/${id}/claim`,
+    release: (id: string) => `${base}/alerts/${id}/release`,
+    notes: (id: string) => `${base}/alerts/${id}/notes`,
+    priority: (id: string) => `${base}/alerts/${id}/priority`,
+    resolve: (id: string) => `${base}/alerts/${id}/resolve`,
   },
 
-  contactView: {
+  workerView: {
     /** Token-authenticated, no account required. */
-    view: (token: string) => `${base}/contact-view/${token}`,
-    acknowledge: (token: string) => `${base}/contact-view/${token}/acknowledge`,
+    view: (token: string) => `${base}/worker-view/${token}`,
+    acknowledge: (token: string) => `${base}/worker-view/${token}/acknowledge`,
   },
 
   privacy: {

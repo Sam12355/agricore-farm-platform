@@ -4,7 +4,7 @@ import {
   SystemClock,
   type DomainError,
   type GeoPoint,
-  type IncidentStatus,
+  type AlertStatus,
   type Page,
   type PageRequest,
   type Result,
@@ -12,22 +12,22 @@ import {
   encodeCursor,
   err,
   ok,
-} from '@guardianlink/shared-types';
+} from '@agricore/shared-types';
 
-import type { CountdownState } from '../../../domain/incident/countdown';
-import type { IncidentState } from '../../../domain/incident/incident';
+import type { CountdownState } from '../../../domain/alert/countdown';
+import type { AlertState } from '../../../domain/alert/alert';
 import type {
-  PendingIncidentEvent,
-  StoredIncidentEvent,
-} from '../../../domain/incident/incident-events';
+  PendingAlertEvent,
+  StoredAlertEvent,
+} from '../../../domain/alert/alert-events';
 import type {
   AuditRecord,
   AuditRepository,
   CountdownRepository,
   IdempotencyRecord,
   IdempotencyStore,
-  IncidentQueryFilter,
-  IncidentRepository,
+  AlertQueryFilter,
+  AlertRepository,
   LocationTelemetryRepository,
   NotificationRecord,
   NotificationRepository,
@@ -37,12 +37,12 @@ import type {
   PrivacySettingsRepository,
   RefreshTokenRecord,
   RefreshTokenRepository,
-  SafetySessionRecord,
-  SafetySessionRepository,
+  FieldOperationRecord,
+  FieldOperationRepository,
   SubscriptionRecord,
   SubscriptionRepository,
-  TrustedContactRecord,
-  TrustedContactRepository,
+  WorkerRecord,
+  WorkerRepository,
   UserRecord,
   UserRepository,
 } from '../../../application/ports';
@@ -55,7 +55,7 @@ import type {
  *
  *   - optimistic version checks, rejecting a stale write
  *   - atomic append of aggregate state plus its events plus its outbox rows
- *   - monotonic per-incident sequence allocation
+ *   - monotonic per-alert sequence allocation
  *   - unique idempotency keys
  *   - cursor pagination with a stable sort
  *
@@ -165,15 +165,15 @@ export class MemoryRefreshTokenRepository implements RefreshTokenRepository {
   }
 }
 
-export class MemoryTrustedContactRepository implements TrustedContactRepository {
-  private readonly records = new Map<string, TrustedContactRecord>();
+export class MemoryWorkerRepository implements WorkerRepository {
+  private readonly records = new Map<string, WorkerRecord>();
 
-  async findById(id: string): Promise<TrustedContactRecord | null> {
+  async findById(id: string): Promise<WorkerRecord | null> {
     const found = this.records.get(id);
     return found ? clone(found) : null;
   }
 
-  async listForUser(userId: string): Promise<TrustedContactRecord[]> {
+  async listForUser(userId: string): Promise<WorkerRecord[]> {
     return [...this.records.values()]
       .filter((record) => record.userId === userId && record.deletedAt === null)
       .map(clone);
@@ -183,11 +183,11 @@ export class MemoryTrustedContactRepository implements TrustedContactRepository 
     return (await this.listForUser(userId)).length;
   }
 
-  async insert(record: TrustedContactRecord): Promise<void> {
+  async insert(record: WorkerRecord): Promise<void> {
     this.records.set(record.id, clone(record));
   }
 
-  async update(record: TrustedContactRecord): Promise<void> {
+  async update(record: WorkerRecord): Promise<void> {
     this.records.set(record.id, clone(record));
   }
 
@@ -203,22 +203,22 @@ export class MemoryTrustedContactRepository implements TrustedContactRepository 
   }
 }
 
-export class MemorySafetySessionRepository implements SafetySessionRepository {
-  private readonly records = new Map<string, SafetySessionRecord>();
+export class MemoryFieldOperationRepository implements FieldOperationRepository {
+  private readonly records = new Map<string, FieldOperationRecord>();
 
-  async findById(id: string): Promise<SafetySessionRecord | null> {
+  async findById(id: string): Promise<FieldOperationRecord | null> {
     const found = this.records.get(id);
     return found ? clone(found) : null;
   }
 
-  async findActiveForUser(userId: string): Promise<SafetySessionRecord | null> {
+  async findActiveForUser(userId: string): Promise<FieldOperationRecord | null> {
     for (const record of this.records.values()) {
       if (record.userId === userId && record.status === 'active') return clone(record);
     }
     return null;
   }
 
-  async listForUser(userId: string, page: PageRequest): Promise<Page<SafetySessionRecord>> {
+  async listForUser(userId: string, page: PageRequest): Promise<Page<FieldOperationRecord>> {
     const all = [...this.records.values()]
       .filter((record) => record.userId === userId)
       .sort((a, b) => b.startedAt.getTime() - a.startedAt.getTime() || b.id.localeCompare(a.id));
@@ -228,15 +228,15 @@ export class MemorySafetySessionRepository implements SafetySessionRepository {
     }));
   }
 
-  async insert(record: SafetySessionRecord): Promise<void> {
+  async insert(record: FieldOperationRecord): Promise<void> {
     this.records.set(record.id, clone(record));
   }
 
-  async update(record: SafetySessionRecord): Promise<void> {
+  async update(record: FieldOperationRecord): Promise<void> {
     this.records.set(record.id, clone(record));
   }
 
-  async findOverdue(now: Date, limit: number): Promise<SafetySessionRecord[]> {
+  async findOverdue(now: Date, limit: number): Promise<FieldOperationRecord[]> {
     return [...this.records.values()]
       .filter((record) => record.status === 'active' && record.expectedEndAt.getTime() <= now.getTime())
       .slice(0, limit)
@@ -273,36 +273,36 @@ export class MemoryCountdownRepository implements CountdownRepository {
   }
 }
 
-export class MemoryIncidentRepository implements IncidentRepository {
-  private readonly incidents = new Map<string, IncidentState>();
-  private readonly events = new Map<string, StoredIncidentEvent[]>();
+export class MemoryAlertRepository implements AlertRepository {
+  private readonly alerts = new Map<string, AlertState>();
+  private readonly events = new Map<string, StoredAlertEvent[]>();
   private readonly idempotency = new Map<string, string>();
   private eventIdCounter = 0;
 
   constructor(private readonly outbox?: MemoryOutboxRepository) {}
 
-  async findById(id: string): Promise<IncidentState | null> {
-    const found = this.incidents.get(id);
+  async findById(id: string): Promise<AlertState | null> {
+    const found = this.alerts.get(id);
     return found ? clone(found) : null;
   }
 
-  async findByIdempotencyKey(userId: string, key: string): Promise<IncidentState | null> {
-    const incidentId = this.idempotency.get(`${userId}:${key}`);
-    return incidentId ? this.findById(incidentId) : null;
+  async findByIdempotencyKey(userId: string, key: string): Promise<AlertState | null> {
+    const alertId = this.idempotency.get(`${userId}:${key}`);
+    return alertId ? this.findById(alertId) : null;
   }
 
   /**
    * Creation is the one place where three different things have to land together: the
-   * incident, its opening timeline events, and the outbox rows that become contact
+   * alert, its opening timeline events, and the outbox rows that become worker
    * notifications. The SQL adapter wraps them in a transaction. Here the equivalent is
    * that the whole block runs without an await between the check and the writes.
    */
   async create(input: {
-    state: IncidentState;
-    events: readonly PendingIncidentEvent[];
+    state: AlertState;
+    events: readonly PendingAlertEvent[];
     idempotencyKey: string | null;
     outbox: readonly OutboxMessage[];
-  }): Promise<Result<{ state: IncidentState; events: StoredIncidentEvent[] }, DomainError>> {
+  }): Promise<Result<{ state: AlertState; events: StoredAlertEvent[] }, DomainError>> {
     const key =
       input.idempotencyKey === null ? null : `${input.state.userId}:${input.idempotencyKey}`;
 
@@ -310,7 +310,7 @@ export class MemoryIncidentRepository implements IncidentRepository {
       return err(DomainErrors.conflict('That activation was already recorded.'));
     }
 
-    this.incidents.set(input.state.id, clone(input.state));
+    this.alerts.set(input.state.id, clone(input.state));
     if (key !== null) this.idempotency.set(key, input.state.id);
 
     const stored = this.appendEvents(input.state.id, input.events);
@@ -320,13 +320,13 @@ export class MemoryIncidentRepository implements IncidentRepository {
   }
 
   async save(input: {
-    state: IncidentState;
-    events: readonly PendingIncidentEvent[];
+    state: AlertState;
+    events: readonly PendingAlertEvent[];
     expectedVersion: number;
     outbox?: readonly OutboxMessage[];
-  }): Promise<Result<{ state: IncidentState; events: StoredIncidentEvent[] }, DomainError>> {
-    const current = this.incidents.get(input.state.id);
-    if (current === undefined) return err(DomainErrors.notFound('Incident'));
+  }): Promise<Result<{ state: AlertState; events: StoredAlertEvent[] }, DomainError>> {
+    const current = this.alerts.get(input.state.id);
+    if (current === undefined) return err(DomainErrors.notFound('Alert'));
 
     // The optimistic check. In SQL this is UPDATE ... WHERE id = $1 AND version = $2 and
     // a zero row count means somebody else got there first.
@@ -334,7 +334,7 @@ export class MemoryIncidentRepository implements IncidentRepository {
       return err(DomainErrors.staleVersion(input.expectedVersion, current.version));
     }
 
-    this.incidents.set(input.state.id, clone(input.state));
+    this.alerts.set(input.state.id, clone(input.state));
     const stored = this.appendEvents(input.state.id, input.events);
     if (this.outbox && input.outbox) for (const message of input.outbox) this.outbox.enqueue(message);
 
@@ -342,67 +342,67 @@ export class MemoryIncidentRepository implements IncidentRepository {
   }
 
   private appendEvents(
-    incidentId: string,
-    pending: readonly PendingIncidentEvent[],
-  ): StoredIncidentEvent[] {
-    const existing = this.events.get(incidentId) ?? [];
+    alertId: string,
+    pending: readonly PendingAlertEvent[],
+  ): StoredAlertEvent[] {
+    const existing = this.events.get(alertId) ?? [];
     const highest = existing.reduce((max, event) => Math.max(max, event.sequence), 0);
 
     // Sequence is allocated here, by the store, never by the aggregate. That is the
     // whole point: two concurrent writers cannot both decide they are number seven,
     // because only the store hands numbers out. Postgres does the same job with a
-    // per-incident sequence column inside the transaction.
-    const stored: StoredIncidentEvent[] = pending.map((event, index) => {
+    // per-alert sequence column inside the transaction.
+    const stored: StoredAlertEvent[] = pending.map((event, index) => {
       this.eventIdCounter += 1;
       return {
         ...event,
         id: `event-${this.eventIdCounter}`,
-        incidentId,
+        alertId,
         sequence: highest + index + 1,
         recordedAt: new Date(),
       };
     });
 
-    this.events.set(incidentId, [...existing, ...stored]);
+    this.events.set(alertId, [...existing, ...stored]);
     return stored.map(clone);
   }
 
   async listEvents(
-    incidentId: string,
+    alertId: string,
     afterSequence: number,
     limit: number,
-  ): Promise<StoredIncidentEvent[]> {
-    return (this.events.get(incidentId) ?? [])
+  ): Promise<StoredAlertEvent[]> {
+    return (this.events.get(alertId) ?? [])
       .filter((event) => event.sequence > afterSequence)
       .sort((a, b) => a.sequence - b.sequence)
       .slice(0, limit)
       .map(clone);
   }
 
-  async latestSequence(incidentId: string): Promise<number> {
-    const events = this.events.get(incidentId) ?? [];
+  async latestSequence(alertId: string): Promise<number> {
+    const events = this.events.get(alertId) ?? [];
     return events.length === 0 ? 0 : Math.max(...events.map((event) => event.sequence));
   }
 
-  async query(filter: IncidentQueryFilter, page: PageRequest): Promise<Page<IncidentState>> {
+  async query(filter: AlertQueryFilter, page: PageRequest): Promise<Page<AlertState>> {
     const now = new Date();
-    const filtered = [...this.incidents.values()].filter((incident) => {
-      if (filter.userId !== undefined && incident.userId !== filter.userId) return false;
-      if (filter.status !== undefined && incident.status !== filter.status) return false;
-      if (filter.priority !== undefined && incident.priority !== filter.priority) return false;
+    const filtered = [...this.alerts.values()].filter((alert) => {
+      if (filter.userId !== undefined && alert.userId !== filter.userId) return false;
+      if (filter.status !== undefined && alert.status !== filter.status) return false;
+      if (filter.priority !== undefined && alert.priority !== filter.priority) return false;
 
-      if (filter.claimed === 'mine' && incident.claimedByOperatorId !== filter.operatorId) {
+      if (filter.claimed === 'mine' && alert.claimedByManagerId !== filter.managerId) {
         return false;
       }
       if (filter.claimed === 'unclaimed') {
         const held =
-          incident.claimedByOperatorId !== null &&
-          incident.claimExpiresAt !== null &&
-          incident.claimExpiresAt.getTime() > now.getTime();
+          alert.claimedByManagerId !== null &&
+          alert.claimExpiresAt !== null &&
+          alert.claimExpiresAt.getTime() > now.getTime();
         if (held) return false;
       }
       if (filter.search !== undefined && filter.search.length > 0) {
-        const haystack = `${incident.id} ${incident.userId} ${incident.trigger}`.toLowerCase();
+        const haystack = `${alert.id} ${alert.userId} ${alert.trigger}`.toLowerCase();
         if (!haystack.includes(filter.search.toLowerCase())) return false;
       }
       return true;
@@ -414,33 +414,33 @@ export class MemoryIncidentRepository implements IncidentRepository {
       (a, b) => b.activatedAt.getTime() - a.activatedAt.getTime() || b.id.localeCompare(a.id),
     );
 
-    return paginate(filtered, page, (incident) => ({
-      sortValue: incident.activatedAt.toISOString(),
-      id: incident.id,
+    return paginate(filtered, page, (alert) => ({
+      sortValue: alert.activatedAt.toISOString(),
+      id: alert.id,
     }));
   }
 
-  async countByStatus(status: IncidentStatus): Promise<number> {
-    return [...this.incidents.values()].filter((incident) => incident.status === status).length;
+  async countByStatus(status: AlertStatus): Promise<number> {
+    return [...this.alerts.values()].filter((alert) => alert.status === status).length;
   }
 
   async countUnclaimed(now: Date): Promise<number> {
-    return [...this.incidents.values()].filter((incident) => {
-      if (incident.status !== 'active') return false;
-      if (incident.claimedByOperatorId === null) return true;
-      return incident.claimExpiresAt === null || incident.claimExpiresAt.getTime() <= now.getTime();
+    return [...this.alerts.values()].filter((alert) => {
+      if (alert.status !== 'active') return false;
+      if (alert.claimedByManagerId === null) return true;
+      return alert.claimExpiresAt === null || alert.claimExpiresAt.getTime() <= now.getTime();
     }).length;
   }
 
   async deleteAllForUser(userId: string): Promise<void> {
-    for (const [id, incident] of this.incidents) {
-      if (incident.userId === userId) {
-        this.incidents.delete(id);
+    for (const [id, alert] of this.alerts) {
+      if (alert.userId === userId) {
+        this.alerts.delete(id);
         this.events.delete(id);
       }
     }
-    for (const [key, incidentId] of this.idempotency) {
-      if (!this.incidents.has(incidentId)) this.idempotency.delete(key);
+    for (const [key, alertId] of this.idempotency) {
+      if (!this.alerts.has(alertId)) this.idempotency.delete(key);
     }
   }
 }
@@ -448,13 +448,13 @@ export class MemoryIncidentRepository implements IncidentRepository {
 export class MemoryLocationTelemetryRepository implements LocationTelemetryRepository {
   private readonly points = new Map<string, Array<GeoPoint & { userId: string }>>();
 
-  async append(incidentId: string, userId: string, points: readonly GeoPoint[]): Promise<void> {
-    const existing = this.points.get(incidentId) ?? [];
-    this.points.set(incidentId, [...existing, ...points.map((point) => ({ ...point, userId }))]);
+  async append(alertId: string, userId: string, points: readonly GeoPoint[]): Promise<void> {
+    const existing = this.points.get(alertId) ?? [];
+    this.points.set(alertId, [...existing, ...points.map((point) => ({ ...point, userId }))]);
   }
 
-  async listForIncident(incidentId: string, limit: number): Promise<GeoPoint[]> {
-    return (this.points.get(incidentId) ?? [])
+  async listForAlert(alertId: string, limit: number): Promise<GeoPoint[]> {
+    return (this.points.get(alertId) ?? [])
       .slice()
       .sort((a, b) => a.capturedAt.getTime() - b.capturedAt.getTime())
       .slice(0, limit)
@@ -462,20 +462,20 @@ export class MemoryLocationTelemetryRepository implements LocationTelemetryRepos
   }
 
   async deleteForUser(userId: string): Promise<void> {
-    for (const [incidentId, points] of this.points) {
+    for (const [alertId, points] of this.points) {
       const remaining = points.filter((point) => point.userId !== userId);
-      if (remaining.length === 0) this.points.delete(incidentId);
-      else this.points.set(incidentId, remaining);
+      if (remaining.length === 0) this.points.delete(alertId);
+      else this.points.set(alertId, remaining);
     }
   }
 
   async deleteOlderThan(cutoff: Date): Promise<number> {
     let removed = 0;
-    for (const [incidentId, points] of this.points) {
+    for (const [alertId, points] of this.points) {
       const remaining = points.filter((point) => point.capturedAt.getTime() >= cutoff.getTime());
       removed += points.length - remaining.length;
-      if (remaining.length === 0) this.points.delete(incidentId);
-      else this.points.set(incidentId, remaining);
+      if (remaining.length === 0) this.points.delete(alertId);
+      else this.points.set(alertId, remaining);
     }
     return removed;
   }
@@ -570,9 +570,9 @@ export class MemoryNotificationRepository implements NotificationRepository {
     return null;
   }
 
-  async listForIncident(incidentId: string): Promise<NotificationRecord[]> {
+  async listForAlert(alertId: string): Promise<NotificationRecord[]> {
     return [...this.records.values()]
-      .filter((record) => record.incidentId === incidentId)
+      .filter((record) => record.alertId === alertId)
       .map(clone);
   }
 
@@ -585,7 +585,7 @@ export class MemoryNotificationRepository implements NotificationRepository {
   }
 
   async deleteForUser(): Promise<void> {
-    // Notifications are keyed by incident; the incident sweep removes them in the SQL
+    // Notifications are keyed by alert; the alert sweep removes them in the SQL
     // adapter through a cascade. Kept here so the port stays honest.
     this.records.clear();
   }
@@ -706,7 +706,7 @@ export class MemoryIdempotencyStore implements IdempotencyStore {
  * The list is already sorted by the caller. The cursor names the last item that was
  * returned, so the next page starts strictly after it. Items inserted at the top between
  * two requests do not shift the window, which is the failure mode OFFSET has and the
- * reason the operator queue does not use it.
+ * reason the manager queue does not use it.
  */
 function paginate<T>(
   sorted: readonly T[],

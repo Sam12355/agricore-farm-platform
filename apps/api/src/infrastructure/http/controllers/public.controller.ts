@@ -14,13 +14,13 @@ import type { Response } from 'express';
 import {
   API_VERSION,
   DEMO_NOTICE_FULL,
-  acknowledgeIncidentSchema,
-  type AcknowledgeIncidentRequest,
-} from '@guardianlink/contracts';
+  acknowledgeAlertSchema,
+  type AcknowledgeAlertRequest,
+} from '@agricore/contracts';
 
-import { ContactViewService } from '../../../application/services/contact-view.service';
+import { WorkerViewService } from '../../../application/services/worker-view.service';
 import { PORTS } from '../../../application/tokens';
-import type { IncidentRepository, OutboxRepository, UserRepository } from '../../../application/ports';
+import type { AlertRepository, OutboxRepository, UserRepository } from '../../../application/ports';
 import {
   CorrelationId,
   Public,
@@ -30,22 +30,22 @@ import {
 } from '../http-plumbing';
 
 /**
- * The trusted-contact surface.
+ * The worker surface.
  *
  * Public in the sense of "no account", not "no authorisation". The token in the path is
  * the credential, and it is checked on every call. Rate limits are tighter here than
  * anywhere else in the API because these endpoints are the only ones an unauthenticated
  * caller can reach with a resource identifier in hand.
  */
-@Controller(`api/${API_VERSION}/contact-view`)
-export class ContactViewController {
-  constructor(private readonly contactView: ContactViewService) {}
+@Controller(`api/${API_VERSION}/worker-view`)
+export class WorkerViewController {
+  constructor(private readonly workerView: WorkerViewService) {}
 
   @Get(':token')
   @Public()
   @RateLimit({ limit: 30, windowSeconds: 60, by: 'ip' })
   async view(@Param('token') token: string, @CorrelationId() correlationId: string) {
-    const result = await this.contactView.view(token);
+    const result = await this.workerView.view(token);
     if (!result.ok) throwDomain(result.error, correlationId);
     return result.value;
   }
@@ -56,10 +56,10 @@ export class ContactViewController {
   @RateLimit({ limit: 20, windowSeconds: 60, by: 'ip' })
   async acknowledge(
     @Param('token') token: string,
-    @Body(new ZodValidationPipe(acknowledgeIncidentSchema)) body: AcknowledgeIncidentRequest,
+    @Body(new ZodValidationPipe(acknowledgeAlertSchema)) body: AcknowledgeAlertRequest,
     @CorrelationId() correlationId: string,
   ) {
-    const result = await this.contactView.acknowledge(token, body.note ?? null);
+    const result = await this.workerView.acknowledge(token, body.note ?? null);
     if (!result.ok) throwDomain(result.error, correlationId);
     return result.value;
   }
@@ -70,7 +70,7 @@ export class ContactViewController {
  *
  * Liveness asks "is this process wedged" and must not depend on anything external.
  * Wiring a database check into it means a database blip restarts every task, which turns
- * a recoverable incident into an outage.
+ * a recoverable alert into an outage.
  *
  * Readiness asks "should traffic be sent here" and does check dependencies, so a task
  * that cannot reach its database leaves the load balancer pool without dying.
@@ -81,7 +81,7 @@ export class OpsController {
 
   constructor(
     @Inject(PORTS.UserRepository) private readonly users: UserRepository,
-    @Inject(PORTS.IncidentRepository) private readonly incidents: IncidentRepository,
+    @Inject(PORTS.AlertRepository) private readonly alerts: AlertRepository,
     @Inject(PORTS.OutboxRepository) private readonly outbox: OutboxRepository,
   ) {}
 
@@ -102,7 +102,7 @@ export class OpsController {
 
     for (const [name, probe] of [
       ['users', () => this.users.findById('readiness-probe')],
-      ['incidents', () => this.incidents.countByStatus('active')],
+      ['alerts', () => this.alerts.countByStatus('active')],
       ['outbox', () => this.outbox.pendingCount()],
     ] as const) {
       const started = Date.now();

@@ -10,7 +10,7 @@ import {
   type LogoutRequest,
   type RefreshRequest,
   type RegisterRequest,
-} from '@guardianlink/contracts';
+} from '@agricore/contracts';
 
 import { IdentityService } from '../../../application/services/identity.service';
 import {

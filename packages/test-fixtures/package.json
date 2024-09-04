@@ -1,8 +1,8 @@
 {
-  "name": "@guardianlink/test-fixtures",
+  "name": "@agricore/test-fixtures",
   "version": "0.1.0",
   "private": true,
-  "description": "Deterministic synthetic fixtures for GuardianLink. No real people, phone numbers or places.",
+  "description": "Deterministic synthetic fixtures for AgriCore. No real people, phone numbers or places.",
   "license": "MIT",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -14,8 +14,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@guardianlink/contracts": "workspace:*",
-    "@guardianlink/shared-types": "workspace:*"
+    "@agricore/contracts": "workspace:*",
+    "@agricore/shared-types": "workspace:*"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.20.0",

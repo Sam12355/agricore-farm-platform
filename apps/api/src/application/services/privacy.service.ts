@@ -4,7 +4,7 @@ import {
   ACCOUNT_DELETION_GRACE_DAYS,
   type UpdatePrivacySettingsRequest,
   defaultPrivacySettings,
-} from '@guardianlink/contracts';
+} from '@agricore/contracts';
 import {
   type Clock,
   DomainErrors,
@@ -13,14 +13,14 @@ import {
   days,
   err,
   ok,
-} from '@guardianlink/shared-types';
+} from '@agricore/shared-types';
 
 import { PORTS } from '../tokens';
 import type {
   AuditRepository,
   CountdownRepository,
   IdGenerator,
-  IncidentRepository,
+  AlertRepository,
   LocationTelemetryRepository,
   NotificationRepository,
   ObjectStore,
@@ -28,10 +28,10 @@ import type {
   PrivacySettingsRecord,
   PrivacySettingsRepository,
   RefreshTokenRepository,
-  SafetySessionRepository,
+  FieldOperationRepository,
   StructuredLogger,
   SubscriptionRepository,
-  TrustedContactRepository,
+  WorkerRepository,
   UserRepository,
 } from '../ports';
 
@@ -40,13 +40,13 @@ import type {
  *
  * The deletion design is the part worth reading. Deleting an account cannot mean
  * "delete every row that mentions this person", because audit records exist precisely so
- * that privileged actions remain answerable, and an operator who viewed someone's
+ * that privileged actions remain answerable, and a manager who viewed someone's
  * location should not be able to erase the evidence by getting that person to close
  * their account.
  *
  * So deletion removes or anonymises everything the user contributed, and keeps audit
  * records with the subject identifier replaced by a stable pseudonym. What survives is
- * "an operator viewed an incident belonging to subject 41f9", never a name, an address,
+ * "a manager viewed an alert belonging to subject 41f9", never a name, an address,
  * a phone number or a coordinate. That is documented in PRIVACY.md, and the test suite
  * asserts it rather than trusting the prose.
  */
@@ -55,10 +55,10 @@ export class PrivacyService {
   constructor(
     @Inject(PORTS.PrivacySettingsRepository) private readonly settings: PrivacySettingsRepository,
     @Inject(PORTS.UserRepository) private readonly users: UserRepository,
-    @Inject(PORTS.TrustedContactRepository) private readonly contacts: TrustedContactRepository,
-    @Inject(PORTS.SafetySessionRepository) private readonly sessions: SafetySessionRepository,
+    @Inject(PORTS.WorkerRepository) private readonly workers: WorkerRepository,
+    @Inject(PORTS.FieldOperationRepository) private readonly sessions: FieldOperationRepository,
     @Inject(PORTS.CountdownRepository) private readonly countdowns: CountdownRepository,
-    @Inject(PORTS.IncidentRepository) private readonly incidents: IncidentRepository,
+    @Inject(PORTS.AlertRepository) private readonly alerts: AlertRepository,
     @Inject(PORTS.LocationTelemetryRepository) private readonly telemetry: LocationTelemetryRepository,
     @Inject(PORTS.NotificationRepository) private readonly notifications: NotificationRepository,
     @Inject(PORTS.SubscriptionRepository) private readonly subscriptions: SubscriptionRepository,
@@ -79,10 +79,10 @@ export class PrivacyService {
     const defaults = defaultPrivacySettings(now.toISOString());
     const record: PrivacySettingsRecord = {
       userId,
-      shareLocationWithContacts: defaults.shareLocationWithContacts,
-      shareLocationWithOperators: defaults.shareLocationWithOperators,
+      shareLocationWithWorkers: defaults.shareLocationWithWorkers,
+      shareLocationWithManagers: defaults.shareLocationWithManagers,
       storePreciseLocationHistory: defaults.storePreciseLocationHistory,
-      incidentRetentionDays: defaults.incidentRetentionDays,
+      alertRetentionDays: defaults.alertRetentionDays,
       locationRetentionDays: defaults.locationRetentionDays,
       notificationLogRetentionDays: defaults.notificationLogRetentionDays,
       allowAnonymisedProductAnalytics: defaults.allowAnonymisedProductAnalytics,
@@ -103,13 +103,13 @@ export class PrivacyService {
     // Merging field by field keeps the stored record fully defined.
     const updated: PrivacySettingsRecord = {
       userId,
-      shareLocationWithContacts:
-        input.shareLocationWithContacts ?? current.shareLocationWithContacts,
-      shareLocationWithOperators:
-        input.shareLocationWithOperators ?? current.shareLocationWithOperators,
+      shareLocationWithWorkers:
+        input.shareLocationWithWorkers ?? current.shareLocationWithWorkers,
+      shareLocationWithManagers:
+        input.shareLocationWithManagers ?? current.shareLocationWithManagers,
       storePreciseLocationHistory:
         input.storePreciseLocationHistory ?? current.storePreciseLocationHistory,
-      incidentRetentionDays: input.incidentRetentionDays ?? current.incidentRetentionDays,
+      alertRetentionDays: input.alertRetentionDays ?? current.alertRetentionDays,
       locationRetentionDays: input.locationRetentionDays ?? current.locationRetentionDays,
       notificationLogRetentionDays:
         input.notificationLogRetentionDays ?? current.notificationLogRetentionDays,
@@ -154,29 +154,29 @@ export class PrivacyService {
     const user = await this.users.findById(userId);
     if (user === null || user.deletedAt !== null) return err(DomainErrors.notFound('Account'));
 
-    const [contacts, sessions, settings, subscription] = await Promise.all([
-      this.contacts.listForUser(userId),
+    const [workers, sessions, settings, subscription] = await Promise.all([
+      this.workers.listForUser(userId),
       this.sessions.listForUser(userId, { limit: 100 }),
       this.getSettings(userId),
       this.subscriptions.findForUser(userId),
     ]);
 
-    const incidents = await this.incidents.query({ userId }, { limit: 100 });
+    const alerts = await this.alerts.query({ userId }, { limit: 100 });
 
     const timelines = [];
-    for (const incident of incidents.items) {
-      const events = await this.incidents.listEvents(incident.id, 0, 1000);
+    for (const alert of alerts.items) {
+      const events = await this.alerts.listEvents(alert.id, 0, 1000);
       const points = includeLocationHistory
-        ? await this.telemetry.listForIncident(incident.id, 5000)
+        ? await this.telemetry.listForAlert(alert.id, 5000)
         : [];
-      timelines.push({ incident, events, locationPoints: points });
+      timelines.push({ alert, events, locationPoints: points });
     }
 
     const document = {
       exportedAt: this.clock.now().toISOString(),
       notice:
-        'This export contains everything GuardianLink holds about your account. ' +
-        'GuardianLink is a portfolio demonstration and not a real safety service.',
+        'This export contains everything AgriCore holds about your account. ' +
+        'AgriCore is a portfolio demonstration and not a working farm operations service.',
       account: {
         id: user.id,
         email: user.email,
@@ -185,9 +185,9 @@ export class PrivacyService {
         createdAt: user.createdAt.toISOString(),
       },
       privacySettings: settings,
-      trustedContacts: contacts,
-      safetySessions: sessions.items,
-      incidents: timelines,
+      workers: workers,
+      fieldOperations: sessions.items,
+      alerts: timelines,
       subscription,
     };
 
@@ -199,7 +199,7 @@ export class PrivacyService {
       userId,
       exportId: id,
       sizeBytes: stored.sizeBytes,
-      incidentCount: timelines.length,
+      alertCount: timelines.length,
     });
 
     return ok({
@@ -252,10 +252,10 @@ export class PrivacyService {
 
     await this.telemetry.deleteForUser(userId);
     await this.notifications.deleteForUser(userId);
-    await this.incidents.deleteAllForUser(userId);
+    await this.alerts.deleteAllForUser(userId);
     await this.countdowns.deleteAllForUser(userId);
     await this.sessions.deleteAllForUser(userId);
-    await this.contacts.deleteAllForUser(userId);
+    await this.workers.deleteAllForUser(userId);
     await this.subscriptions.deleteForUser(userId);
     await this.settings.deleteForUser(userId);
     await this.refreshTokens.revokeAllForUser(userId, now);

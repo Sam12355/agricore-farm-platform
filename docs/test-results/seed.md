@@ -1,48 +1,50 @@
 # Recorded seed run
 
 Command: `pnpm seed` (ts-node src/seed/seed.ts), in-memory adapters
-Run at: 2026-07-31T04:52:38Z
+Run at: 2026-07-31T09:26:47Z
 
-The duplicate_activation scenario throws if a retry ever produces a second incident,
+The duplicate_activation scenario throws if a retry ever produces a second alert,
 so this output is itself a check that the deduplication holds.
 
 ```console
 Seeding demo accounts
   demo.user@example.com (user)
-  demo.operator@example.com (operator)
-  second.operator@example.com (operator)
+  demo.manager@example.com (manager)
+  second.manager@example.com (manager)
   demo.admin@example.com (admin)
 
 Seeding scenarios
 
-  clean_resolution: Walk home, alert raised, resolved safely
-    incident 3038fd71-ff85-427d-b418-ae726669a45a
+  clean_resolution: Spraying pass, alert raised in the block, resolved
+    alert 875dec70-d606-477b-8fce-80ab2027f75e
     24 location points
     notifications: 2 sent, 0 failed
     resolved
 
   cancelled_countdown: Accidental trigger, cancelled during the countdown
-    cancelled: true. No incident created, which is the point.
+    cancelled: true. No alert created, which is the point.
 
-  no_acknowledgement_escalation: Primary contact does not answer
-    incident 5ab38003-ff19-431d-b6e7-064a06ac38ab
+  no_acknowledgement_escalation: Primary worker does not answer
+    alert bfcd54ce-744d-4afa-ba81-585d5dc4bd51
     18 location points
     notifications: 3 sent, 0 failed
 
-  offline_backfill: Phone loses signal, queues events, flushes on reconnect
-    incident bcda76c6-0797-44b5-bc87-191f9be6261c
+  offline_backfill: No signal in the far block, events queued, flushed on reconnect
+    alert 8c23693c-2afd-4dca-ba50-28d61011f30b
     30 location points
     notifications: 3 sent, 0 failed
 
   duplicate_activation: Retry storm on a flaky connection
-    incident 78ffdf46-2bb2-4823-b595-16c9a1d906e2
-    four retries, all deduplicated to the same incident
+    alert 5268c789-5bc0-4c97-9874-f21feff995c1
+    four retries, all deduplicated to the same alert
     6 location points
     notifications: 3 sent, 0 failed
 
 Done.
 Sign in with any account from docs/DEMO.md.
-Passphrase: guardianlink-demo-passphrase
+Passphrase: agricore-demo-passphrase
 
 Every name, number and coordinate above is synthetic. See PRIVACY.md.
 ```
+
+Re-recorded after the domain rename, for the reason given in [api.md](api.md).

@@ -65,13 +65,13 @@ async function bootstrap(): Promise<void> {
 
   await app.listen(config.PORT);
 
-  logger.info('guardianlink api listening', {
+  logger.info('agricore api listening', {
     port: config.PORT,
     environment: config.NODE_ENV,
     persistence: config.PERSISTENCE,
     notificationTransport: config.NOTIFICATION_TRANSPORT,
   });
-  logger.warn('this is a portfolio demonstration and does not contact emergency services');
+  logger.warn('this is a portfolio demonstration and is not connected to any real farm');
 }
 
 void bootstrap();

@@ -1,10 +1,10 @@
-# GraphQL surface for the operator console.
+# GraphQL surface for the manager console.
 #
 # Read model and live updates only. Every mutation stays on REST, and that split is
 # deliberate rather than an omission:
 #
 #   - The console's reads are nested and vary per screen. The queue wants a summary, the
-#     detail panel wants an incident plus its timeline plus its notifications in one round
+#     detail panel wants an alert plus its timeline plus its notifications in one round
 #     trip. That is what GraphQL is good at, and it is what REST makes awkward.
 #
 #   - The mutations are the opposite. They need an Idempotency-Key header, a precise status
@@ -16,31 +16,31 @@
 
 scalar DateTime
 
-enum IncidentStatus {
+enum AlertStatus {
   active
   acknowledged
   resolved
   cancelled
 }
 
-enum IncidentPriority {
+enum AlertPriority {
   low
   standard
   high
   critical
 }
 
-enum IncidentTrigger {
-  sos_countdown
-  manual_panic
-  session_overdue
-  operator_created
+enum AlertTrigger {
+  field_countdown
+  manual_report
+  operation_overdue
+  manager_created
 }
 
 enum ActorType {
   user
-  operator
-  contact
+  manager
+  worker
   system
 }
 
@@ -51,9 +51,9 @@ type GeoPoint {
   capturedAt: DateTime!
 }
 
-type IncidentEvent {
+type AlertEvent {
   id: ID!
-  "Per-incident monotonic sequence. Order by this, never by a timestamp."
+  "Per-alert monotonic sequence. Order by this, never by a timestamp."
   sequence: Int!
   type: String!
   actorType: ActorType!
@@ -63,14 +63,14 @@ type IncidentEvent {
   recordedAt: DateTime!
 }
 
-type Incident {
+type Alert {
   id: ID!
-  status: IncidentStatus!
-  priority: IncidentPriority!
-  trigger: IncidentTrigger!
+  status: AlertStatus!
+  priority: AlertPriority!
+  trigger: AlertTrigger!
   activatedAt: DateTime!
   resolvedAt: DateTime
-  claimedByOperatorId: ID
+  claimedByManagerId: ID
   claimedAt: DateTime
   "Optimistic concurrency token. Send it back on every REST mutation."
   version: Int!
@@ -80,14 +80,14 @@ type Incident {
   The timeline. Pass `after` with the highest sequence already applied to fetch only what
   is new, which is what the console does on reconnect.
   """
-  events(after: Int = 0, limit: Int = 200): [IncidentEvent!]!
+  events(after: Int = 0, limit: Int = 200): [AlertEvent!]!
 
-  "Number of trusted contacts notified. A count, never the contacts themselves."
-  notifiedContactCount: Int!
+  "Number of assigned workers notified. A count, never the workers themselves."
+  notifiedWorkerCount: Int!
 }
 
-type IncidentPage {
-  items: [Incident!]!
+type AlertPage {
+  items: [Alert!]!
   nextCursor: String
   hasMore: Boolean!
 }
@@ -99,18 +99,18 @@ type QueueCounts {
 
 type Query {
   """
-  The operator queue. Cursor pagination, never offset: incidents arrive continuously, and
+  The manager queue. Cursor pagination, never offset: alerts arrive continuously, and
   an offset window silently skips a row when something is inserted between pages.
   """
-  incidents(
-    status: IncidentStatus
-    priority: IncidentPriority
+  alerts(
+    status: AlertStatus
+    priority: AlertPriority
     claimed: ClaimFilter
     limit: Int = 25
     cursor: String
-  ): IncidentPage!
+  ): AlertPage!
 
-  incident(id: ID!): Incident
+  alert(id: ID!): Alert
 
   queueCounts: QueueCounts!
 }
@@ -123,13 +123,13 @@ enum ClaimFilter {
 
 type Subscription {
   """
-  Live incident updates for the operator queue.
+  Live alert updates for the manager queue.
 
   Authorisation is checked per subscription, not only at connection. Without that, any
-  authenticated user could subscribe to a stranger's incident and watch their location
+  authenticated user could subscribe to a stranger's alert and watch their location
   move.
   """
-  incidentUpdated(incidentId: ID): Incident!
+  alertUpdated(alertId: ID): Alert!
 
   queueChanged: QueueCounts!
 }

@@ -3,7 +3,7 @@ import { ConfigurationError, developmentConfig, corsOrigins, loadConfig } from '
 const secrets = {
   JWT_ACCESS_SECRET: 'a'.repeat(40),
   JWT_REFRESH_SECRET: 'b'.repeat(40),
-  JWT_CONTACT_VIEW_SECRET: 'c'.repeat(40),
+  JWT_WORKER_VIEW_SECRET: 'c'.repeat(40),
 };
 
 describe('loadConfig', () => {
@@ -40,7 +40,7 @@ describe('loadConfig', () => {
       loadConfig({
         JWT_ACCESS_SECRET: shared,
         JWT_REFRESH_SECRET: shared,
-        JWT_CONTACT_VIEW_SECRET: 'c'.repeat(40),
+        JWT_WORKER_VIEW_SECRET: 'c'.repeat(40),
       }),
     ).toThrow(/must all be different/);
   });
@@ -53,7 +53,7 @@ describe('loadConfig', () => {
     const config = loadConfig({
       ...secrets,
       PERSISTENCE: 'postgres',
-      DATABASE_URL: 'postgres://localhost:5432/guardianlink',
+      DATABASE_URL: 'postgres://localhost:5432/agricore',
     });
     expect(config.PERSISTENCE).toBe('postgres');
   });
@@ -83,7 +83,7 @@ describe('loadConfig', () => {
       ...secrets,
       NODE_ENV: 'production',
       PERSISTENCE: 'postgres',
-      DATABASE_URL: 'postgres://db/guardianlink',
+      DATABASE_URL: 'postgres://db/agricore',
       CACHE: 'redis',
       REDIS_URL: 'redis://cache:6379',
     });

@@ -40,7 +40,7 @@ layer is a safety net, not permission.
 the exhaustive switch in `error-mapper.ts`, which will refuse to compile until its status code is
 decided.
 
-**Every mutation of an incident carries an expected version.** If a new operation genuinely should
+**Every mutation of an alert carries an expected version.** If a new operation genuinely should
 not, say why in the pull request.
 
 **Endpoints a client will retry must deduplicate.** Mobile clients retry. Assume every write is
@@ -56,7 +56,7 @@ comment, not as an example that looks real. `.env.example` takes placeholders.
 **Do freely:** add tests, fix a failing test, improve a comment that explains why, add an ADR,
 tighten a type, extend a Zod schema additively.
 
-**Do with a spec:** anything touching authentication, authorisation, the incident state machine,
+**Do with a spec:** anything touching authentication, authorisation, the alert state machine,
 notification delivery, retention or deletion.
 
 **Stop and ask:** changing a public contract in `packages/contracts`, changing a retention default,
@@ -74,8 +74,8 @@ Run these and paste the real output. Do not describe what you expect them to pri
 ```bash
 pnpm lint
 pnpm typecheck
-pnpm --filter @guardianlink/api test
-pnpm --filter @guardianlink/api test:e2e
+pnpm --filter @agricore/api test
+pnpm --filter @agricore/api test:e2e
 ```
 
 Then review your own diff against [docs/ai/REVIEW_CHECKLIST.md](docs/ai/REVIEW_CHECKLIST.md).
@@ -92,7 +92,7 @@ did well; it is a sign that nobody was reviewing.
 
 ## Repository facts worth knowing
 
-- pnpm workspaces. `pnpm build:packages` before anything that imports `@guardianlink/*`.
+- pnpm workspaces. `pnpm build:packages` before anything that imports `@agricore/*`.
 - The test suite needs no external services. If you find yourself adding a service container to make
   a test pass, you have taken a wrong turn.
 - `packages/contracts` is the single source of truth for the API surface. Change a schema there and

@@ -4,8 +4,8 @@ import {
   API_VERSION,
   verifyPurchaseSchema,
   type VerifyPurchaseRequest,
-} from '@guardianlink/contracts';
-import { UserRole, normaliseLimit } from '@guardianlink/shared-types';
+} from '@agricore/contracts';
+import { UserRole, normaliseLimit } from '@agricore/shared-types';
 
 import { SubscriptionService } from '../../../application/services/subscription.service';
 import { PORTS } from '../../../application/tokens';
@@ -75,8 +75,8 @@ export class SubscriptionController {
 /**
  * Administration.
  *
- * Only the audit log and a user listing. Deliberately not incident content: an admin role
- * exists to answer "who did what", not to be a second operator console with fewer
+ * Only the audit log and a user listing. Deliberately not alert content: an admin role
+ * exists to answer "who did what", not to be a second manager console with fewer
  * restrictions. Roles that quietly accumulate read access to everything are how a
  * privilege boundary stops meaning anything.
  */
@@ -128,7 +128,7 @@ export class AdminController {
   @Get('users')
   @RateLimit({ limit: 60, windowSeconds: 60, by: 'subject' })
   async listUsers() {
-    // No incident data, no contacts, no location. Enough to administer an account and
+    // No alert data, no workers, no location. Enough to administer an account and
     // nothing more.
     const all = 'all' in this.users ? (this.users as unknown as { all: () => unknown[] }).all() : [];
 

@@ -29,9 +29,9 @@ Conventional Commits. The release-note generator in `native-release-lab` reads t
 is load-bearing rather than decorative.
 
 ```
-feat(incidents): expire an operator claim after five minutes
+feat(alerts): expire a manager claim after five minutes
 fix(auth): reject a token claiming the none algorithm
-test(sos): cover a cancellation arriving after expiry
+test(alert): cover a cancellation arriving after expiry
 docs(privacy): explain what survives account deletion
 refactor(outbox): move dedupe into the consumer
 build(deps): update zod to 3.24

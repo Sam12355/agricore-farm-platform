@@ -5,9 +5,9 @@ import { JwtTokenService, type TokenConfig } from './token.service';
 const config: TokenConfig = {
   accessSecret: 'access-secret-for-tests-only-not-a-real-secret',
   refreshSecret: 'refresh-secret-for-tests-only-not-a-real-secret',
-  contactViewSecret: 'contact-view-secret-for-tests-only-not-a-real-secret',
-  issuer: 'guardianlink-test',
-  audience: 'guardianlink-clients',
+  workerViewSecret: 'worker-view-secret-for-tests-only-not-a-real-secret',
+  issuer: 'agricore-test',
+  audience: 'agricore-clients',
   accessTtlSeconds: 900,
   refreshTtlSeconds: 2_592_000,
 };
@@ -18,14 +18,14 @@ describe('access tokens', () => {
   it('round-trips the subject, role and family', () => {
     const { token } = service.issueAccessToken({
       userId: 'user-1',
-      role: 'operator',
+      role: 'manager',
       familyId: 'family-1',
     });
 
     const verified = service.verifyAccessToken(token);
     expect(verified.ok).toBe(true);
     if (!verified.ok) return;
-    expect(verified.value).toEqual({ userId: 'user-1', role: 'operator', familyId: 'family-1' });
+    expect(verified.value).toEqual({ userId: 'user-1', role: 'manager', familyId: 'family-1' });
   });
 
   it('carries nothing that identifies a person', () => {
@@ -135,17 +135,17 @@ describe('refresh tokens', () => {
   });
 });
 
-describe('contact view tokens', () => {
-  it('round-trips the incident and contact', () => {
-    const token = service.issueContactViewToken({
-      incidentId: 'incident-1',
-      contactId: 'contact-1',
+describe('worker view tokens', () => {
+  it('round-trips the alert and worker', () => {
+    const token = service.issueWorkerViewToken({
+      alertId: 'alert-1',
+      workerId: 'worker-1',
       ttlSeconds: 3600,
     });
-    const verified = service.verifyContactViewToken(token);
+    const verified = service.verifyWorkerViewToken(token);
     expect(verified.ok).toBe(true);
     if (!verified.ok) return;
-    expect(verified.value).toEqual({ incidentId: 'incident-1', contactId: 'contact-1' });
+    expect(verified.value).toEqual({ alertId: 'alert-1', workerId: 'worker-1' });
   });
 
   it('will not accept an access token in its place', () => {
@@ -154,13 +154,13 @@ describe('contact view tokens', () => {
       role: 'admin',
       familyId: 'f',
     });
-    expect(service.verifyContactViewToken(token).ok).toBe(false);
+    expect(service.verifyWorkerViewToken(token).ok).toBe(false);
   });
 
-  it('will not let a contact link be used as an access token', () => {
-    const link = service.issueContactViewToken({
-      incidentId: 'incident-1',
-      contactId: 'contact-1',
+  it('will not let a worker link be used as an access token', () => {
+    const link = service.issueWorkerViewToken({
+      alertId: 'alert-1',
+      workerId: 'worker-1',
       ttlSeconds: 3600,
     });
     expect(service.verifyAccessToken(link).ok).toBe(false);
@@ -168,25 +168,25 @@ describe('contact view tokens', () => {
 
   it('expires', () => {
     const expired = jwt.sign(
-      { inc: 'i', con: 'c', typ: 'contact-view' },
-      config.contactViewSecret,
+      { inc: 'i', con: 'c', typ: 'worker-view' },
+      config.workerViewSecret,
       {
         algorithm: 'HS256',
         issuer: config.issuer,
-        audience: 'contact-view',
+        audience: 'worker-view',
         expiresIn: -60,
       },
     );
-    const result = service.verifyContactViewToken(expired);
+    const result = service.verifyWorkerViewToken(expired);
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.error.message).toMatch(/expired/i);
   });
 
   it('carries no role and no user id, so it cannot be widened', () => {
-    const token = service.issueContactViewToken({
-      incidentId: 'i',
-      contactId: 'c',
+    const token = service.issueWorkerViewToken({
+      alertId: 'i',
+      workerId: 'c',
       ttlSeconds: 60,
     });
     const decoded = jwt.decode(token) as Record<string, unknown>;

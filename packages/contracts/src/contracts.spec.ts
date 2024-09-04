@@ -1,19 +1,19 @@
 import { describe, expect, it } from 'vitest';
 
 import { loginRequestSchema, registerRequestSchema } from './auth';
-import { createTrustedContactSchema, updateTrustedContactSchema } from './contacts';
+import { createWorkerSchema, updateWorkerSchema } from './workers';
 import { errorResponseSchema, idempotencyKeySchema, phoneSchema } from './common';
 import {
   COUNTDOWN_MAX_SECONDS,
   COUNTDOWN_MIN_SECONDS,
-  activateIncidentSchema,
-  incidentEventSchema,
+  activateAlertSchema,
+  alertEventSchema,
   recordLocationSchema,
-  resolveIncidentSchema,
+  resolveAlertSchema,
   startCountdownSchema,
-} from './incidents';
+} from './alerts';
 import { updatePrivacySettingsSchema } from './privacy';
-import { resumeIncidentSchema } from './realtime';
+import { resumeAlertSchema } from './realtime';
 import { Routes } from './routes';
 
 const uuid = '4f1c2b0e-2a1d-4c3b-9a0e-1f2d3c4b5a60';
@@ -70,23 +70,23 @@ describe('login contract', () => {
   });
 });
 
-describe('trusted contact contract', () => {
-  it('requires at least one way to reach the contact', () => {
-    const result = createTrustedContactSchema.safeParse({ name: 'Sam' });
+describe('assigned worker contract', () => {
+  it('requires at least one way to reach the worker', () => {
+    const result = createWorkerSchema.safeParse({ name: 'Sam' });
     expect(result.success).toBe(false);
   });
 
-  it('accepts a contact with only a phone number', () => {
-    const result = createTrustedContactSchema.safeParse({ name: 'Sam', phone: '+31 6 1234 5678' });
+  it('accepts a worker with only a phone number', () => {
+    const result = createWorkerSchema.safeParse({ name: 'Sam', phone: '+31 6 1234 5678' });
     expect(result.success).toBe(true);
   });
 
   it('rejects an empty update', () => {
-    expect(updateTrustedContactSchema.safeParse({}).success).toBe(false);
+    expect(updateWorkerSchema.safeParse({}).success).toBe(false);
   });
 
   it('allows clearing a field with null', () => {
-    expect(updateTrustedContactSchema.safeParse({ phone: null }).success).toBe(true);
+    expect(updateWorkerSchema.safeParse({ phone: null }).success).toBe(true);
   });
 });
 
@@ -141,21 +141,21 @@ describe('idempotency key contract', () => {
 
 describe('activation contract', () => {
   it('defaults the trigger to the countdown path', () => {
-    const result = activateIncidentSchema.safeParse({});
+    const result = activateAlertSchema.safeParse({});
     expect(result.success).toBe(true);
-    if (result.success) expect(result.data.trigger).toBe('sos_countdown');
+    if (result.success) expect(result.data.trigger).toBe('field_countdown');
   });
 
   it('accepts an occurredAt from a client that was offline', () => {
-    const result = activateIncidentSchema.safeParse({
+    const result = activateAlertSchema.safeParse({
       occurredAt: '2026-01-01T10:00:00.000Z',
-      trigger: 'manual_panic',
+      trigger: 'manual_report',
     });
     expect(result.success).toBe(true);
   });
 
   it('rejects a timestamp without an offset', () => {
-    expect(activateIncidentSchema.safeParse({ occurredAt: '2026-01-01 10:00:00' }).success).toBe(
+    expect(activateAlertSchema.safeParse({ occurredAt: '2026-01-01 10:00:00' }).success).toBe(
       false,
     );
   });
@@ -196,11 +196,11 @@ describe('location contract', () => {
   });
 });
 
-describe('operator mutation contracts', () => {
+describe('manager mutation contracts', () => {
   it('requires an expected version so a stale console cannot overwrite', () => {
-    expect(resolveIncidentSchema.safeParse({ resolution: 'user_safe' }).success).toBe(false);
+    expect(resolveAlertSchema.safeParse({ resolution: 'issue_cleared' }).success).toBe(false);
     expect(
-      resolveIncidentSchema.safeParse({ resolution: 'user_safe', expectedVersion: 3 }).success,
+      resolveAlertSchema.safeParse({ resolution: 'issue_cleared', expectedVersion: 3 }).success,
     ).toBe(true);
   });
 });
@@ -223,53 +223,53 @@ describe('privacy contract', () => {
 
 describe('realtime contract', () => {
   it('accepts a resume from sequence zero, meaning send everything', () => {
-    expect(resumeIncidentSchema.safeParse({ incidentId: uuid, lastSequence: 0 }).success).toBe(true);
+    expect(resumeAlertSchema.safeParse({ alertId: uuid, lastSequence: 0 }).success).toBe(true);
   });
 
   it('rejects a negative resume point', () => {
-    expect(resumeIncidentSchema.safeParse({ incidentId: uuid, lastSequence: -1 }).success).toBe(
+    expect(resumeAlertSchema.safeParse({ alertId: uuid, lastSequence: -1 }).success).toBe(
       false,
     );
   });
 });
 
-describe('incident event contract', () => {
+describe('alert event contract', () => {
   it('requires a positive sequence, because zero means nothing applied yet', () => {
     const event = {
       id: uuid,
-      incidentId: uuid,
+      alertId: uuid,
       sequence: 0,
-      type: 'incident.activated',
+      type: 'alert.activated',
       actorType: 'user',
       actorId: uuid,
       occurredAt: '2026-01-01T10:00:00.000Z',
       recordedAt: '2026-01-01T10:00:01.000Z',
       payload: {},
     };
-    expect(incidentEventSchema.safeParse(event).success).toBe(false);
-    expect(incidentEventSchema.safeParse({ ...event, sequence: 1 }).success).toBe(true);
+    expect(alertEventSchema.safeParse(event).success).toBe(false);
+    expect(alertEventSchema.safeParse({ ...event, sequence: 1 }).success).toBe(true);
   });
 
   it('rejects an unknown event type rather than rendering it as unknown', () => {
     const event = {
       id: uuid,
-      incidentId: uuid,
+      alertId: uuid,
       sequence: 1,
-      type: 'incident.something_new',
+      type: 'alert.something_new',
       actorType: 'system',
       actorId: null,
       occurredAt: '2026-01-01T10:00:00.000Z',
       recordedAt: '2026-01-01T10:00:01.000Z',
       payload: {},
     };
-    expect(incidentEventSchema.safeParse(event).success).toBe(false);
+    expect(alertEventSchema.safeParse(event).success).toBe(false);
   });
 });
 
 describe('error envelope', () => {
   it('always carries a correlation id so a user can quote it in a support request', () => {
     const withoutCorrelation = {
-      error: { code: 'NOT_FOUND', message: 'Incident was not found.' },
+      error: { code: 'NOT_FOUND', message: 'Alert was not found.' },
     };
     expect(errorResponseSchema.safeParse(withoutCorrelation).success).toBe(false);
   });
@@ -279,9 +279,9 @@ describe('routes', () => {
   it('versions every application route', () => {
     const collected = [
       Routes.auth.login,
-      Routes.contacts.collection,
+      Routes.workers.collection,
       Routes.countdown.activate,
-      Routes.incidents.collection,
+      Routes.alerts.collection,
       Routes.privacy.settings,
       Routes.subscriptions.current,
     ];

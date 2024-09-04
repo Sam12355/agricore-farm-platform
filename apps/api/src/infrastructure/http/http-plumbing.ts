@@ -24,7 +24,7 @@ import type { NextFunction, Request, Response } from 'express';
 import { type Observable, tap } from 'rxjs';
 import type { ZodSchema } from 'zod';
 
-import { DomainErrors, type UserRole } from '@guardianlink/shared-types';
+import { DomainErrors, type UserRole } from '@agricore/shared-types';
 
 import type { RateLimiter, StructuredLogger, TokenService } from '../../application/ports';
 import { PORTS } from '../../application/tokens';
@@ -101,8 +101,8 @@ export class ZodValidationPipe implements PipeTransform {
   }
 }
 
-export const ROLES_KEY = 'guardianlink:roles';
-export const PUBLIC_KEY = 'guardianlink:public';
+export const ROLES_KEY = 'agricore:roles';
+export const PUBLIC_KEY = 'agricore:public';
 
 export const Roles = (...roles: UserRole[]) => SetMetadata(ROLES_KEY, roles);
 export const Public = () => SetMetadata(PUBLIC_KEY, true);
@@ -198,7 +198,7 @@ export class AuthGuard implements CanActivate {
   }
 }
 
-export const RATE_LIMIT_KEY = 'guardianlink:rate-limit';
+export const RATE_LIMIT_KEY = 'agricore:rate-limit';
 
 export interface RateLimitSpec {
   readonly limit: number;
@@ -341,7 +341,7 @@ export class DomainExceptionFilter implements ExceptionFilter {
     response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       error: {
         code: 'INTERNAL_ERROR',
-        message: 'Something went wrong. Quote the correlation id if you contact support.',
+        message: 'Something went wrong. Quote the correlation id if you worker support.',
         correlationId,
       },
     });
@@ -349,6 +349,6 @@ export class DomainExceptionFilter implements ExceptionFilter {
 }
 
 /** Converts a failed Result into the HttpException the filter knows how to render. */
-export function throwDomain(error: import('@guardianlink/shared-types').DomainError, correlationId: string): never {
+export function throwDomain(error: import('@agricore/shared-types').DomainError, correlationId: string): never {
   throw new HttpException(toErrorBody(error, correlationId), statusForDomainError(error));
 }

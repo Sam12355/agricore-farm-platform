@@ -1,6 +1,6 @@
 import type { Collection, Db } from 'mongodb';
 
-import type { GeoPoint } from '@guardianlink/shared-types';
+import type { GeoPoint } from '@agricore/shared-types';
 
 import type { LocationTelemetryRepository } from '../../../application/ports';
 
@@ -9,21 +9,21 @@ import type { LocationTelemetryRepository } from '../../../application/ports';
  *
  * This is the only thing MongoDB stores, and the justification is in ADR-0004. In short:
  * location pings are append-only, written in bursts when an offline client flushes a
- * backlog, never joined against anything, queried only as "all points for this incident in
+ * backlog, never joined against anything, queried only as "all points for this alert in
  * time order", and they expire on a schedule.
  *
  * The TTL index is the part that matters most. Expiry is enforced by the database rather
  * than by a job that might not run, and for the most sensitive data this product holds
  * that is worth something on its own.
  *
- * The boundary that keeps this honest: **if MongoDB is unavailable, incidents still work.**
- * The subject's last known position lives on the incident row in Postgres. Losing this
- * costs the detailed track on the operator's map, not the incident, the timeline, the
+ * The boundary that keeps this honest: **if MongoDB is unavailable, alerts still work.**
+ * The subject's last known position lives on the alert row in Postgres. Losing this
+ * costs the detailed track on the manager's map, not the alert, the timeline, the
  * notifications or the audit trail.
  */
 
 interface TelemetryDocument {
-  incidentId: string;
+  alertId: string;
   userId: string;
   latitude: number;
   longitude: number;
@@ -49,8 +49,8 @@ export class MongoTelemetryRepository implements LocationTelemetryRepository {
    */
   async ensureIndexes(retentionDays = 30): Promise<void> {
     await this.points.createIndex(
-      { incidentId: 1, capturedAt: 1 },
-      { name: 'incident_time' },
+      { alertId: 1, capturedAt: 1 },
+      { name: 'alert_time' },
     );
 
     await this.points.createIndex(
@@ -64,14 +64,14 @@ export class MongoTelemetryRepository implements LocationTelemetryRepository {
     await this.points.createIndex({ userId: 1 }, { name: 'user' });
   }
 
-  async append(incidentId: string, userId: string, points: readonly GeoPoint[]): Promise<void> {
+  async append(alertId: string, userId: string, points: readonly GeoPoint[]): Promise<void> {
     if (points.length === 0) return;
 
     const now = new Date();
 
     await this.points.insertMany(
       points.map((point) => ({
-        incidentId,
+        alertId,
         userId,
         latitude: point.latitude,
         longitude: point.longitude,
@@ -80,14 +80,14 @@ export class MongoTelemetryRepository implements LocationTelemetryRepository {
         receivedAt: now,
       })),
       // Unordered, so one bad document does not abort the rest of a flushed backlog.
-      // Telemetry is best-effort by design; the incident record is not.
+      // Telemetry is best-effort by design; the alert record is not.
       { ordered: false },
     );
   }
 
-  async listForIncident(incidentId: string, limit: number): Promise<GeoPoint[]> {
+  async listForAlert(alertId: string, limit: number): Promise<GeoPoint[]> {
     const documents = await this.points
-      .find({ incidentId }, { projection: { _id: 0 } })
+      .find({ alertId }, { projection: { _id: 0 } })
       .sort({ capturedAt: 1 })
       .limit(limit)
       .toArray();

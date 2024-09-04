@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.guardianlink"
+    namespace = "com.agricore"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.guardianlink"
+        applicationId = "com.agricore"
         minSdk = 26
         targetSdk = 34
 

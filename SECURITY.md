@@ -1,6 +1,6 @@
 # Security
 
-GuardianLink is a portfolio demonstration and is not deployed anywhere. There is no production
+AgriCore is a portfolio demonstration and is not deployed anywhere. There is no production
 system to attack and no real user data to lose. This document describes the controls that are
 implemented, the ones that are deliberately absent, and how to report a problem.
 
@@ -8,7 +8,7 @@ implemented, the ones that are deliberately absent, and how to report a problem.
 
 Open a GitHub issue. Do not include a real credential, a real access token, or real location data
 in it. If you believe you have found something that would matter in a real deployment, say so in
-the title and I will treat it as a design review rather than an incident, because there is nothing
+the title and I will treat it as a design review rather than an alert, because there is nothing
 live to be compromised.
 
 ## What is implemented
@@ -33,11 +33,11 @@ live to be compromised.
 
 - Route guards answer "are you authenticated and could your role possibly do this".
 - Ownership is checked separately, in the service layer, because only it can load the record. Both
-  layers are required; a route-only check is how "any logged-in user can read any incident by
+  layers are required; a route-only check is how "any logged-in user can read any alert by
   guessing an id" happens.
 - Reading something that exists but is not yours returns 404, not 403. A 403 confirms the resource
   exists, which is an enumeration oracle.
-- Operator actions require an operator role and, for anything that changes an incident, a live claim.
+- Manager actions require a manager role and, for anything that changes an alert, a live claim.
 - Socket subscriptions are authorised per room, with the same ownership rule, not only at connect.
 
 ### Input and output
@@ -54,12 +54,12 @@ live to be compromised.
 ### Rate limiting
 
 Per route and per subject, or per address on unauthenticated routes. Tighter on the expensive and
-sensitive paths: three data exports an hour, twenty contact-link acknowledgements a minute. `429`
+sensitive paths: three data exports an hour, twenty worker-link acknowledgements a minute. `429`
 always carries `Retry-After`, because without it a mobile client hammers the endpoint.
 
 ### Idempotency
 
-Mandatory on SOS activation. Enforced at the HTTP layer against a stored response, and again at the
+Mandatory on alert activation. Enforced at the HTTP layer against a stored response, and again at the
 database with a unique index on `(user_id, key)`. The same key with a different body is a 409, not a
 silent success: that combination is always a client bug and hiding it helps nobody.
 
@@ -73,7 +73,7 @@ declared so a browser preflight does not silently strip them.
 
 - The logger redacts by key name at any depth: password, token, authorization, cookie, email, phone,
   latitude, longitude, address, name, note, body. Passing a whole request body to a log call produces
-  a redacted line rather than an incident. There are tests for this.
+  a redacted line rather than an alert. There are tests for this.
 - Coordinates are on the redaction list deliberately, and it is the entry I would defend hardest.
   Coordinates in a log sink are retained for as long as the log group lives, readable by anyone with
   logs access, and outside every retention control the product offers.
@@ -93,12 +93,12 @@ declared so a browser preflight does not silently strip them.
 
 ### Data protection
 
-- Location is accepted only from the subject, only while the incident is open. An operator cannot
+- Location is accepted only from the subject, only while the alert is open. A manager cannot
   inject a position, so every point on the map came from the device that was there.
-- Sharing is two independent switches: the subject's privacy setting and the per-contact permission.
+- Sharing is two independent switches: the subject's privacy setting and the per-worker permission.
   Both must be on.
-- Contact-view tokens name one incident and one contact, expire, and carry no role or user id. The
-  worst a leaked link can do is show one incident to someone already entitled to see it.
+- Worker-view tokens name one alert and one worker, expire, and carry no role or user id. The
+  worst a leaked link can do is show one alert to someone already entitled to see it.
 - Precise location history is off by default. When disabled, only district-level coarsened positions
   are retained.
 
@@ -124,7 +124,7 @@ Being explicit about this matters more than the list of what is.
 | Password hashing, salting, rehash policy | Unit tests, recorded output |
 | JWT algorithm pinning, audience, issuer, expiry | Unit tests including a forged `alg: none` token |
 | Refresh rotation and reuse detection | Integration tests |
-| Cross-user authorisation on every incident and contact operation | Integration tests |
+| Cross-user authorisation on every alert and worker operation | Integration tests |
 | Log redaction | Unit tests asserting the emitted line |
 | Idempotency and duplicate suppression | End-to-end tests |
 | Rate limiting | Implemented; covered by unit tests of the limiter, not by an end-to-end burst test |

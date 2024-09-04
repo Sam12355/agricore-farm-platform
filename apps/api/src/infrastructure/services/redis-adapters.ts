@@ -102,7 +102,7 @@ export class RedisDistributedLock implements DistributedLock {
 }
 
 /**
- * Operator presence.
+ * Manager presence.
  *
  * A sorted set keyed by last-seen timestamp, so "who is online" is a range query and
  * expiry is a range delete rather than a per-key TTL. Presence is the one piece of state
@@ -110,21 +110,21 @@ export class RedisDistributedLock implements DistributedLock {
  * and repopulates it.
  */
 export class RedisPresence {
-  private static readonly KEY = 'presence:operators';
+  private static readonly KEY = 'presence:managers';
 
   constructor(private readonly redis: Redis) {}
 
-  async heartbeat(operatorId: string, now: Date): Promise<void> {
-    await this.redis.zadd(RedisPresence.KEY, now.getTime(), operatorId);
+  async heartbeat(managerId: string, now: Date): Promise<void> {
+    await this.redis.zadd(RedisPresence.KEY, now.getTime(), managerId);
   }
 
-  async onlineOperators(now: Date, staleAfterMs = 60_000): Promise<string[]> {
+  async onlineManagers(now: Date, staleAfterMs = 60_000): Promise<string[]> {
     const cutoff = now.getTime() - staleAfterMs;
     await this.redis.zremrangebyscore(RedisPresence.KEY, '-inf', cutoff);
     return this.redis.zrangebyscore(RedisPresence.KEY, cutoff, '+inf');
   }
 
-  async leave(operatorId: string): Promise<void> {
-    await this.redis.zrem(RedisPresence.KEY, operatorId);
+  async leave(managerId: string): Promise<void> {
+    await this.redis.zrem(RedisPresence.KEY, managerId);
   }
 }

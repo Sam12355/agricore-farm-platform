@@ -13,21 +13,21 @@ import {
   MAX_REPLAY_EVENTS,
   SOCKET_NAMESPACE,
   ServerEvent,
-  resumeIncidentSchema,
-  subscribeIncidentSchema,
-} from '@guardianlink/contracts';
-import { UserRole } from '@guardianlink/shared-types';
+  resumeAlertSchema,
+  subscribeAlertSchema,
+} from '@agricore/contracts';
+import { UserRole } from '@agricore/shared-types';
 
-import type { IncidentState } from '../../domain/incident/incident';
-import type { StoredIncidentEvent } from '../../domain/incident/incident-events';
+import type { AlertState } from '../../domain/alert/alert';
+import type { StoredAlertEvent } from '../../domain/alert/alert-events';
 import type {
-  IncidentRepository,
+  AlertRepository,
   RealtimePublisher,
   StructuredLogger,
   TokenService,
 } from '../../application/ports';
 import { PORTS } from '../../application/tokens';
-import { toIncidentDto, toIncidentEventDto } from '../http/dto-mappers';
+import { toAlertDto, toAlertEventDto } from '../http/dto-mappers';
 
 interface SocketAuth {
   userId: string;
@@ -35,7 +35,7 @@ interface SocketAuth {
 }
 
 const QUEUE_ROOM = 'queue';
-const incidentRoom = (incidentId: string) => `incident:${incidentId}`;
+const alertRoom = (alertId: string) => `alert:${alertId}`;
 
 /**
  * The real-time layer.
@@ -47,12 +47,12 @@ const incidentRoom = (incidentId: string) => `incident:${incidentId}`;
  *      socket. There is no path that trusts a userId sent in a message payload, because
  *      a client can put anything in a payload.
  *
- *   2. **Authorisation per subscription.** Joining an incident room is checked against
+ *   2. **Authorisation per subscription.** Joining an alert room is checked against
  *      the same ownership rule the HTTP layer uses. Without that, a logged-in user could
- *      subscribe to a stranger's incident and watch their location move, which is about
+ *      subscribe to a stranger's alert and watch their location move, which is about
  *      the worst thing this product could do.
  *
- *   3. **Gaps.** Sockets drop. Every event carries a per-incident sequence number, and
+ *   3. **Gaps.** Sockets drop. Every event carries a per-alert sequence number, and
  *      a reconnecting client sends the last sequence it applied so the server can replay
  *      exactly what it missed. Beyond a replay window the client is told to refetch
  *      instead, because streaming ten thousand events to catch up is slower than a
@@ -68,7 +68,7 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
 
   constructor(
     @Inject(PORTS.TokenService) private readonly tokens: TokenService,
-    @Inject(PORTS.IncidentRepository) private readonly incidents: IncidentRepository,
+    @Inject(PORTS.AlertRepository) private readonly alerts: AlertRepository,
     @Inject(PORTS.Logger) private readonly logger: StructuredLogger,
   ) {}
 
@@ -112,12 +112,12 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     const auth = this.identities.get(socket);
     if (auth === undefined) return;
 
-    // The operator queue is the whole incident firehose. Only staff get it.
-    if (auth.role !== UserRole.Operator && auth.role !== UserRole.Admin) {
+    // The manager queue is the whole alert firehose. Only staff get it.
+    if (auth.role !== UserRole.Manager && auth.role !== UserRole.Admin) {
       socket.emit(ServerEvent.SubscriptionRejected, {
         event: ClientEvent.SubscribeQueue,
         code: 'FORBIDDEN',
-        message: 'The incident queue is available to operators only.',
+        message: 'The alert queue is available to managers only.',
       });
       return;
     }
@@ -125,38 +125,38 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     await socket.join(QUEUE_ROOM);
   }
 
-  @SubscribeMessage(ClientEvent.SubscribeIncident)
-  async subscribeIncident(socket: Socket, payload: unknown): Promise<void> {
+  @SubscribeMessage(ClientEvent.SubscribeAlert)
+  async subscribeAlert(socket: Socket, payload: unknown): Promise<void> {
     const auth = this.identities.get(socket);
     if (auth === undefined) return;
 
-    const parsed = subscribeIncidentSchema.safeParse(payload);
+    const parsed = subscribeAlertSchema.safeParse(payload);
     if (!parsed.success) {
       socket.emit(ServerEvent.SubscriptionRejected, {
-        event: ClientEvent.SubscribeIncident,
+        event: ClientEvent.SubscribeAlert,
         code: 'VALIDATION_FAILED',
-        message: 'An incident id is required.',
+        message: 'An alert id is required.',
       });
       return;
     }
 
-    const allowed = await this.mayViewIncident(parsed.data.incidentId, auth);
+    const allowed = await this.mayViewAlert(parsed.data.alertId, auth);
     if (!allowed) {
       socket.emit(ServerEvent.SubscriptionRejected, {
-        event: ClientEvent.SubscribeIncident,
+        event: ClientEvent.SubscribeAlert,
         code: 'NOT_FOUND',
-        message: 'Incident was not found.',
+        message: 'Alert was not found.',
       });
       return;
     }
 
-    await socket.join(incidentRoom(parsed.data.incidentId));
+    await socket.join(alertRoom(parsed.data.alertId));
   }
 
-  @SubscribeMessage(ClientEvent.UnsubscribeIncident)
-  async unsubscribeIncident(socket: Socket, payload: unknown): Promise<void> {
-    const parsed = subscribeIncidentSchema.safeParse(payload);
-    if (parsed.success) await socket.leave(incidentRoom(parsed.data.incidentId));
+  @SubscribeMessage(ClientEvent.UnsubscribeAlert)
+  async unsubscribeAlert(socket: Socket, payload: unknown): Promise<void> {
+    const parsed = subscribeAlertSchema.safeParse(payload);
+    if (parsed.success) await socket.leave(alertRoom(parsed.data.alertId));
   }
 
   /**
@@ -172,68 +172,68 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     const auth = this.identities.get(socket);
     if (auth === undefined) return;
 
-    const parsed = resumeIncidentSchema.safeParse(payload);
+    const parsed = resumeAlertSchema.safeParse(payload);
     if (!parsed.success) return;
 
-    const allowed = await this.mayViewIncident(parsed.data.incidentId, auth);
+    const allowed = await this.mayViewAlert(parsed.data.alertId, auth);
     if (!allowed) {
       socket.emit(ServerEvent.SubscriptionRejected, {
         event: ClientEvent.Resume,
         code: 'NOT_FOUND',
-        message: 'Incident was not found.',
+        message: 'Alert was not found.',
       });
       return;
     }
 
-    const latestSequence = await this.incidents.latestSequence(parsed.data.incidentId);
+    const latestSequence = await this.alerts.latestSequence(parsed.data.alertId);
     const gap = latestSequence - parsed.data.lastSequence;
     const truncated = gap > MAX_REPLAY_EVENTS;
 
     const events = truncated
       ? []
-      : await this.incidents.listEvents(
-          parsed.data.incidentId,
+      : await this.alerts.listEvents(
+          parsed.data.alertId,
           parsed.data.lastSequence,
           MAX_REPLAY_EVENTS,
         );
 
-    await socket.join(incidentRoom(parsed.data.incidentId));
+    await socket.join(alertRoom(parsed.data.alertId));
     socket.emit(ServerEvent.Resumed, {
-      incidentId: parsed.data.incidentId,
-      events: events.map(toIncidentEventDto),
+      alertId: parsed.data.alertId,
+      events: events.map(toAlertEventDto),
       latestSequence,
       truncated,
     });
   }
 
-  private async mayViewIncident(incidentId: string, auth: SocketAuth): Promise<boolean> {
-    if (auth.role === UserRole.Operator || auth.role === UserRole.Admin) return true;
-    const incident = await this.incidents.findById(incidentId);
-    return incident !== null && incident.userId === auth.userId;
+  private async mayViewAlert(alertId: string, auth: SocketAuth): Promise<boolean> {
+    if (auth.role === UserRole.Manager || auth.role === UserRole.Admin) return true;
+    const alert = await this.alerts.findById(alertId);
+    return alert !== null && alert.userId === auth.userId;
   }
 
   // RealtimePublisher --------------------------------------------------------
 
-  incidentCreated(state: IncidentState): void {
-    this.server?.to(QUEUE_ROOM).emit(ServerEvent.IncidentCreated, {
-      incident: toIncidentDto(state),
+  alertCreated(state: AlertState): void {
+    this.server?.to(QUEUE_ROOM).emit(ServerEvent.AlertCreated, {
+      alert: toAlertDto(state),
       emittedAt: new Date().toISOString(),
     });
   }
 
-  incidentUpdated(state: IncidentState, changedFields: readonly string[]): void {
+  alertUpdated(state: AlertState, changedFields: readonly string[]): void {
     const payload = {
-      incident: toIncidentDto(state),
+      alert: toAlertDto(state),
       changedFields: [...changedFields],
       emittedAt: new Date().toISOString(),
     };
-    this.server?.to(incidentRoom(state.id)).emit(ServerEvent.IncidentUpdated, payload);
-    this.server?.to(QUEUE_ROOM).emit(ServerEvent.IncidentUpdated, payload);
+    this.server?.to(alertRoom(state.id)).emit(ServerEvent.AlertUpdated, payload);
+    this.server?.to(QUEUE_ROOM).emit(ServerEvent.AlertUpdated, payload);
   }
 
-  incidentEventAppended(event: StoredIncidentEvent): void {
-    this.server?.to(incidentRoom(event.incidentId)).emit(ServerEvent.IncidentEventAppended, {
-      event: toIncidentEventDto(event),
+  alertEventAppended(event: StoredAlertEvent): void {
+    this.server?.to(alertRoom(event.alertId)).emit(ServerEvent.AlertEventAppended, {
+      event: toAlertEventDto(event),
       emittedAt: new Date().toISOString(),
     });
   }
@@ -248,20 +248,20 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
 
 /** Used by unit and integration tests that assert what would have been published. */
 export class RecordingRealtimePublisher implements RealtimePublisher {
-  readonly created: IncidentState[] = [];
-  readonly updated: Array<{ state: IncidentState; changedFields: readonly string[] }> = [];
-  readonly events: StoredIncidentEvent[] = [];
+  readonly created: AlertState[] = [];
+  readonly updated: Array<{ state: AlertState; changedFields: readonly string[] }> = [];
+  readonly events: StoredAlertEvent[] = [];
   readonly queueUpdates: Array<{ activeCount: number; unclaimedCount: number }> = [];
 
-  incidentCreated(state: IncidentState): void {
+  alertCreated(state: AlertState): void {
     this.created.push(state);
   }
 
-  incidentUpdated(state: IncidentState, changedFields: readonly string[]): void {
+  alertUpdated(state: AlertState, changedFields: readonly string[]): void {
     this.updated.push({ state, changedFields });
   }
 
-  incidentEventAppended(event: StoredIncidentEvent): void {
+  alertEventAppended(event: StoredAlertEvent): void {
     this.events.push(event);
   }
 

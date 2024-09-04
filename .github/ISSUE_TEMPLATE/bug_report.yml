@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        GuardianLink is a portfolio demonstration, not a real safety service. Please do
+        AgriCore is a portfolio demonstration, not a working farm service. Please do
         not include real personal information, real location data, or a real access
         token in this report. If you have a correlation id from an error screen, that is
         the most useful thing you can give us and it identifies nobody.
@@ -26,7 +26,7 @@ body:
       options:
         - API
         - Web user portal
-        - Web operator console
+        - Web manager console
         - iOS app
         - Android app
         - Local setup or tooling

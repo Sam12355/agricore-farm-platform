@@ -126,8 +126,8 @@ describe('demo accounts', () => {
     }
   });
 
-  it('includes two operators so multi-operator behaviour can be demonstrated', () => {
-    expect(DEMO_ACCOUNTS.filter((a) => a.role === 'operator')).toHaveLength(2);
+  it('includes two managers so multi-manager behaviour can be demonstrated', () => {
+    expect(DEMO_ACCOUNTS.filter((a) => a.role === 'manager')).toHaveLength(2);
   });
 });
 
@@ -142,13 +142,13 @@ describe('scenarios', () => {
     expect(buildScenario('cancelled_countdown').track).toHaveLength(0);
   });
 
-  it('gives the escalation scenario three contacts so there is somewhere to escalate to', () => {
-    expect(buildScenario('no_acknowledgement_escalation').contacts).toHaveLength(3);
+  it('gives the escalation scenario three workers so there is somewhere to escalate to', () => {
+    expect(buildScenario('no_acknowledgement_escalation').workers).toHaveLength(3);
   });
 
-  it('orders contact priority from one upwards', () => {
+  it('orders worker priority from one upwards', () => {
     const scenario = buildScenario('clean_resolution');
-    expect(scenario.contacts.map((c) => c.priority)).toEqual([1, 2]);
+    expect(scenario.workers.map((c) => c.priority)).toEqual([1, 2]);
   });
 
   it('states an expected outcome for every scenario', () => {

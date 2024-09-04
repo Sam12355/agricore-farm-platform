@@ -13,9 +13,9 @@ running, and a portfolio whose tests a reviewer cannot run in two minutes might 
 
 ```bash
 pnpm verify                                  # format, lint, type-check, everything
-pnpm --filter @guardianlink/api test         # unit + integration
-pnpm --filter @guardianlink/api test:e2e     # the 13-step workflow over HTTP
-pnpm --filter @guardianlink/api test:cov     # with coverage
+pnpm --filter @agricore/api test         # unit + integration
+pnpm --filter @agricore/api test:e2e     # the 13-step workflow over HTTP
+pnpm --filter @agricore/api test:cov     # with coverage
 pnpm --filter "./packages/**" -r test        # contracts, tokens, fixtures
 ```
 
@@ -32,7 +32,7 @@ pnpm --filter "./packages/**" -r test        # contracts, tokens, fixtures
 | End-to-end | `apps/api/test/e2e` | The whole Nest application in-process, driven over HTTP |
 | Browser | `apps/web/e2e` | Playwright journeys plus axe accessibility checks |
 | Android | `app/src/test`, `app/src/androidTest` | JUnit with MockWebServer, Compose UI tests |
-| iOS | `GuardianLinkTests`, `GuardianLinkUITests` | XCTest and XCUITest |
+| iOS | `AgriCoreTests`, `AgriCoreUITests` | XCTest and XCUITest |
 
 ## What the coverage is pointed at
 
@@ -41,11 +41,11 @@ Effort went where being wrong costs something:
 
 - **Authorisation.** Ten integration tests, one per operation, cross-user. Not one test called
   "authorisation works", because that is how the gap on the eleventh endpoint survives.
-- **Incident activation.** Including the duplicate path, the cancelled-countdown path, and the
+- **Alert activation.** Including the duplicate path, the cancelled-countdown path, and the
   key-reuse path.
 - **Delivery.** Dedupe, retry backoff, dead-lettering, safe replay.
 - **Deletion and export.** That the right data goes and the right data stays.
-- **Offline sync.** A backlog flushed twenty minutes late, out of order, producing one incident and
+- **Offline sync.** A backlog flushed twenty minutes late, out of order, producing one alert and
   a timeline with the original capture times.
 - **Real-time state.** Ordering, gap replay, subscription authorisation.
 

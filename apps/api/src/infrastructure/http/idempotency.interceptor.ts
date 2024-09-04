@@ -14,15 +14,15 @@ import { Reflector } from '@nestjs/core';
 import type { Response } from 'express';
 import { type Observable, of, tap } from 'rxjs';
 
-import { idempotencyKeySchema } from '@guardianlink/contracts';
-import { type Clock, DomainErrors, seconds } from '@guardianlink/shared-types';
+import { idempotencyKeySchema } from '@agricore/contracts';
+import { type Clock, DomainErrors, seconds } from '@agricore/shared-types';
 
 import type { IdempotencyStore, StructuredLogger } from '../../application/ports';
 import { PORTS } from '../../application/tokens';
 import { toErrorBody } from './error-mapper';
 import type { AuthenticatedRequest } from './http-plumbing';
 
-export const IDEMPOTENT_KEY = 'guardianlink:idempotent';
+export const IDEMPOTENT_KEY = 'agricore:idempotent';
 export const IDEMPOTENCY_HEADER = 'idempotency-key';
 
 export interface IdempotentSpec {
@@ -39,7 +39,7 @@ export const Idempotent = (spec: IdempotentSpec = { required: true, ttlSeconds: 
  *
  * A phone on a bad connection retries. Sometimes it retries a request that actually
  * succeeded and whose response was lost on the way back. Without this, that turns into
- * two incidents, two sets of notifications, and two very confused trusted contacts.
+ * two alerts, two sets of notifications, and two very confused assigned workers.
  *
  * The stored key is the client key plus the authenticated subject plus the route.
  * Scoping by subject stops one user replaying another user's key; scoping by route stops

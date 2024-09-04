@@ -20,7 +20,7 @@ const MAX_LONGITUDE = 180;
 
 /**
  * Accuracy worse than this is kept but flagged. We do not drop it, because during an
- * incident a coarse fix is still better than nothing, and the operator needs to know
+ * alert a coarse fix is still better than nothing, and the manager needs to know
  * the difference between "somewhere in this building" and "somewhere in this city".
  */
 export const COARSE_ACCURACY_THRESHOLD_METRES = 500;
@@ -78,7 +78,7 @@ export function distanceMetres(a: Coordinates, b: Coordinates): number {
  * Rounds coordinates down to a coarse grid, for logs and analytics.
  *
  * Three decimal places is roughly 110 metres at the equator. Precise enough to say
- * "the incident was in this district", nowhere near precise enough to identify a home.
+ * "the alert was in this district", nowhere near precise enough to identify a home.
  */
 export function coarsen(point: Coordinates, decimals = 3): Coordinates {
   const factor = 10 ** decimals;

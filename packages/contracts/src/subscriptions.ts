@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { isoDateTimeSchema, uuidSchema } from './common';
 
-export const subscriptionTierSchema = z.enum(['free', 'plus', 'family']);
+export const subscriptionTierSchema = z.enum(['free', 'plus', 'team']);
 export const subscriptionStatusSchema = z.enum([
   'none',
   'active',
@@ -39,10 +39,10 @@ export const verifyPurchaseSchema = z.object({
 export const entitlementSchema = z.object({
   tier: subscriptionTierSchema,
   features: z.object({
-    maxTrustedContacts: z.number().int().positive(),
+    maxWorkers: z.number().int().positive(),
     liveLocationSharing: z.boolean(),
-    extendedIncidentHistoryDays: z.number().int().positive(),
-    priorityOperatorQueue: z.boolean(),
+    extendedAlertHistoryDays: z.number().int().positive(),
+    priorityManagerQueue: z.boolean(),
   }),
 });
 
@@ -59,28 +59,28 @@ export const ENTITLEMENTS: Record<SubscriptionTierDto, EntitlementDto> = {
   free: {
     tier: 'free',
     features: {
-      maxTrustedContacts: 3,
+      maxWorkers: 3,
       liveLocationSharing: true,
-      extendedIncidentHistoryDays: 30,
-      priorityOperatorQueue: false,
+      extendedAlertHistoryDays: 30,
+      priorityManagerQueue: false,
     },
   },
   plus: {
     tier: 'plus',
     features: {
-      maxTrustedContacts: 10,
+      maxWorkers: 10,
       liveLocationSharing: true,
-      extendedIncidentHistoryDays: 365,
-      priorityOperatorQueue: true,
+      extendedAlertHistoryDays: 365,
+      priorityManagerQueue: true,
     },
   },
-  family: {
-    tier: 'family',
+  team: {
+    tier: 'team',
     features: {
-      maxTrustedContacts: 25,
+      maxWorkers: 25,
       liveLocationSharing: true,
-      extendedIncidentHistoryDays: 730,
-      priorityOperatorQueue: true,
+      extendedAlertHistoryDays: 730,
+      priorityManagerQueue: true,
     },
   },
 };

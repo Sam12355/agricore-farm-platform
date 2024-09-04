@@ -1,7 +1,7 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 import type { INestApplication } from '@nestjs/common';
 
-import { FixedClock, type Clock } from '@guardianlink/shared-types';
+import { FixedClock, type Clock } from '@agricore/shared-types';
 
 import { AppModule } from '../../src/app.module';
 import { PORTS } from '../../src/application/tokens';

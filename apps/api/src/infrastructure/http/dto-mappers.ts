@@ -1,18 +1,18 @@
 import type {
   CountdownDto,
-  IncidentDto,
-  IncidentEventDto,
-  SafetySessionDto,
-  TrustedContactDto,
-} from '@guardianlink/contracts';
+  AlertDto,
+  AlertEventDto,
+  FieldOperationDto,
+  WorkerDto,
+} from '@agricore/contracts';
 
-import type { CountdownState } from '../../domain/incident/countdown';
-import type { IncidentState } from '../../domain/incident/incident';
-import type { StoredIncidentEvent } from '../../domain/incident/incident-events';
+import type { CountdownState } from '../../domain/alert/countdown';
+import type { AlertState } from '../../domain/alert/alert';
+import type { StoredAlertEvent } from '../../domain/alert/alert-events';
 import type {
   PrivacySettingsRecord,
-  SafetySessionRecord,
-  TrustedContactRecord,
+  FieldOperationRecord,
+  WorkerRecord,
 } from '../../application/ports';
 
 /**
@@ -24,7 +24,7 @@ import type {
  * clients before anyone notices.
  */
 
-export function toIncidentDto(state: IncidentState): IncidentDto {
+export function toAlertDto(state: AlertState): AlertDto {
   return {
     id: state.id,
     userId: state.userId,
@@ -35,7 +35,7 @@ export function toIncidentDto(state: IncidentState): IncidentDto {
     activatedAt: state.activatedAt.toISOString(),
     resolvedAt: state.resolvedAt?.toISOString() ?? null,
     resolvedBy: state.resolvedBy,
-    claimedByOperatorId: state.claimedByOperatorId,
+    claimedByManagerId: state.claimedByManagerId,
     claimedAt: state.claimedAt?.toISOString() ?? null,
     lastKnownLocation:
       state.lastKnownLocation === null
@@ -52,10 +52,10 @@ export function toIncidentDto(state: IncidentState): IncidentDto {
   };
 }
 
-export function toIncidentEventDto(event: StoredIncidentEvent): IncidentEventDto {
+export function toAlertEventDto(event: StoredAlertEvent): AlertEventDto {
   return {
     id: event.id,
-    incidentId: event.incidentId,
+    alertId: event.alertId,
     sequence: event.sequence,
     type: event.type,
     actorType: event.actorType,
@@ -73,17 +73,17 @@ export function toCountdownDto(state: CountdownState): CountdownDto {
     startedAt: state.startedAt.toISOString(),
     expiresAt: state.expiresAt.toISOString(),
     cancelledAt: state.cancelledAt?.toISOString() ?? null,
-    incidentId: state.incidentId,
+    alertId: state.alertId,
   };
 }
 
-export function toTrustedContactDto(record: TrustedContactRecord): TrustedContactDto {
+export function toWorkerDto(record: WorkerRecord): WorkerDto {
   return {
     id: record.id,
     name: record.name,
     email: record.email,
     phone: record.phone,
-    relationship: record.relationship,
+    jobRole: record.jobRole,
     priority: record.priority,
     preferredChannel: record.preferredChannel,
     canViewLiveLocation: record.canViewLiveLocation,
@@ -93,7 +93,7 @@ export function toTrustedContactDto(record: TrustedContactRecord): TrustedContac
   };
 }
 
-export function toSafetySessionDto(record: SafetySessionRecord): SafetySessionDto {
+export function toFieldOperationDto(record: FieldOperationRecord): FieldOperationDto {
   return {
     id: record.id,
     status: record.status,
@@ -108,10 +108,10 @@ export function toSafetySessionDto(record: SafetySessionRecord): SafetySessionDt
 
 export function toPrivacySettingsDto(record: PrivacySettingsRecord) {
   return {
-    shareLocationWithContacts: record.shareLocationWithContacts,
-    shareLocationWithOperators: record.shareLocationWithOperators,
+    shareLocationWithWorkers: record.shareLocationWithWorkers,
+    shareLocationWithManagers: record.shareLocationWithManagers,
     storePreciseLocationHistory: record.storePreciseLocationHistory,
-    incidentRetentionDays: record.incidentRetentionDays,
+    alertRetentionDays: record.alertRetentionDays,
     locationRetentionDays: record.locationRetentionDays,
     notificationLogRetentionDays: record.notificationLogRetentionDays,
     allowAnonymisedProductAnalytics: record.allowAnonymisedProductAnalytics,

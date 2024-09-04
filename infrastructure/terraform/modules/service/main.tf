@@ -192,7 +192,7 @@ resource "aws_ecs_task_definition" "service" {
     }
 
     # Liveness, not readiness. Restarting a task because its database blipped turns a
-    # recoverable incident into an outage. Readiness is the load balancer's question and
+    # recoverable alert into an outage. Readiness is the load balancer's question and
     # is answered at /ready.
     healthCheck = {
       command     = ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3001/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
@@ -260,7 +260,7 @@ resource "aws_ecs_service" "service" {
 
 resource "aws_cloudwatch_metric_alarm" "unhealthy_hosts" {
   alarm_name          = "${local.name}-unhealthy-hosts"
-  comparison_operator = "GreaterThanThreshold"
+  comparison_manager = "GreaterThanThreshold"
   evaluation_periods  = 2
   metric_name         = "UnHealthyHostCount"
   namespace           = "AWS/ApplicationELB"
@@ -280,7 +280,7 @@ resource "aws_cloudwatch_metric_alarm" "unhealthy_hosts" {
 
 resource "aws_cloudwatch_metric_alarm" "server_errors" {
   alarm_name          = "${local.name}-5xx"
-  comparison_operator = "GreaterThanThreshold"
+  comparison_manager = "GreaterThanThreshold"
   evaluation_periods  = 2
   metric_name         = "HTTPCode_Target_5XX_Count"
   namespace           = "AWS/ApplicationELB"
@@ -303,7 +303,7 @@ resource "aws_cloudwatch_metric_alarm" "server_errors" {
 # person rather than to a dashboard.
 resource "aws_cloudwatch_metric_alarm" "outbox_backlog" {
   alarm_name          = "${local.name}-outbox-backlog"
-  comparison_operator = "GreaterThanThreshold"
+  comparison_manager = "GreaterThanThreshold"
   evaluation_periods  = 1
   metric_name         = "ApproximateNumberOfMessagesVisible"
   namespace           = "AWS/SQS"
@@ -320,7 +320,7 @@ resource "aws_cloudwatch_metric_alarm" "outbox_backlog" {
 
 resource "aws_cloudwatch_metric_alarm" "dead_letters" {
   alarm_name          = "${local.name}-dead-letters"
-  comparison_operator = "GreaterThanThreshold"
+  comparison_manager = "GreaterThanThreshold"
   evaluation_periods  = 1
   metric_name         = "ApproximateNumberOfMessagesVisible"
   namespace           = "AWS/SQS"

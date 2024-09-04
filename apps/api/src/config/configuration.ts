@@ -29,16 +29,16 @@ export const configSchema = z
     NODE_ENV: nodeEnvSchema.default('development'),
     PORT: z.coerce.number().int().min(1).max(65535).default(3001),
     LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
-    SERVICE_NAME: z.string().default('guardianlink-api'),
+    SERVICE_NAME: z.string().default('agricore-api'),
 
     PUBLIC_WEB_ORIGIN: z.string().url().default('http://localhost:3000'),
     CORS_ALLOWED_ORIGINS: z.string().default('http://localhost:3000'),
 
     JWT_ACCESS_SECRET: secretSchema,
     JWT_REFRESH_SECRET: secretSchema,
-    JWT_CONTACT_VIEW_SECRET: secretSchema,
-    JWT_ISSUER: z.string().default('guardianlink'),
-    JWT_AUDIENCE: z.string().default('guardianlink-clients'),
+    JWT_WORKER_VIEW_SECRET: secretSchema,
+    JWT_ISSUER: z.string().default('agricore'),
+    JWT_AUDIENCE: z.string().default('agricore-clients'),
     ACCESS_TOKEN_TTL_SECONDS: z.coerce.number().int().min(60).max(3600).default(900),
     REFRESH_TOKEN_TTL_SECONDS: z.coerce.number().int().default(2_592_000),
 
@@ -106,13 +106,13 @@ export const configSchema = z
   )
   .refine(
     (config) =>
-      new Set([config.JWT_ACCESS_SECRET, config.JWT_REFRESH_SECRET, config.JWT_CONTACT_VIEW_SECRET])
+      new Set([config.JWT_ACCESS_SECRET, config.JWT_REFRESH_SECRET, config.JWT_WORKER_VIEW_SECRET])
         .size === 3,
     {
-      // Reusing one secret across token types means a contact-view link and an access
+      // Reusing one secret across token types means a worker-view link and an access
       // token are signed by the same key, and the only thing keeping them apart is a
       // claim check. Separate keys make that a structural boundary instead.
-      message: 'Access, refresh and contact-view secrets must all be different.',
+      message: 'Access, refresh and worker-view secrets must all be different.',
       path: ['JWT_ACCESS_SECRET'],
     },
   );
@@ -154,7 +154,7 @@ export function developmentConfig(overrides: Partial<AppConfig> = {}): AppConfig
     NODE_ENV: 'test',
     JWT_ACCESS_SECRET: generate(),
     JWT_REFRESH_SECRET: generate(),
-    JWT_CONTACT_VIEW_SECRET: generate(),
+    JWT_WORKER_VIEW_SECRET: generate(),
     ENABLE_BACKGROUND_WORKERS: 'false',
     ...(Object.fromEntries(
       Object.entries(overrides).map(([key, value]) => [key, String(value)]),

@@ -1,7 +1,7 @@
 import request from 'supertest';
 import type { App } from 'supertest/types';
 
-import { DEMO_PASSWORD } from '@guardianlink/test-fixtures';
+import { DEMO_PASSWORD } from '@agricore/test-fixtures';
 
 import { PORTS } from '../../src/application/tokens';
 import { createTestApp, type TestApp } from '../support/test-app';
@@ -12,7 +12,7 @@ import { createTestApp, type TestApp } from '../support/test-app';
  * The point of these tests is not that GraphQL works, it is that the authorisation rules
  * survive the second transport. A resolver looks like a pure data accessor, and every
  * field resolver is another place an unchecked read can appear, so each one gets a
- * cross-user test rather than a single "operators can query" test.
+ * cross-user test rather than a single "managers can query" test.
  */
 
 let harness: TestApp;
@@ -29,7 +29,7 @@ async function register(email: string) {
   };
 }
 
-async function registerOperator(email: string) {
+async function registerManager(email: string) {
   const registered = await register(email);
 
   const users = harness.module.get<import('../../src/application/ports').UserRepository>(
@@ -37,7 +37,7 @@ async function registerOperator(email: string) {
   );
   const user = await users.findById(registered.userId);
   if (user === null) throw new Error('user missing');
-  await users.update({ ...user, role: 'operator' });
+  await users.update({ ...user, role: 'manager' });
 
   const login = await request(http)
     .post('/api/v1/auth/login')
@@ -49,12 +49,12 @@ async function registerOperator(email: string) {
 
 async function activate(token: string, key: string) {
   const response = await request(http)
-    .post('/api/v1/sos/activate')
+    .post('/api/v1/alerts/activate')
     .set('Authorization', `Bearer ${token}`)
     .set('Idempotency-Key', key)
-    .send({ trigger: 'manual_panic' })
+    .send({ trigger: 'manual_report' })
     .expect(201);
-  return response.body.incident.id as string;
+  return response.body.alert.id as string;
 }
 
 function graphql(query: string, variables: Record<string, unknown> = {}, token?: string) {
@@ -73,12 +73,12 @@ afterEach(async () => {
 
 describe('the GraphQL endpoint', () => {
   it('is served', async () => {
-    const operator = await registerOperator('gql-operator@example.com');
+    const manager = await registerManager('gql-manager@example.com');
 
     const response = await graphql(
       '{ queueCounts { activeCount unclaimedCount } }',
       {},
-      operator.accessToken,
+      manager.accessToken,
     ).expect(200);
 
     expect(response.body.errors).toBeUndefined();
@@ -86,12 +86,12 @@ describe('the GraphQL endpoint', () => {
   });
 
   it('exposes the schema the console was written against', async () => {
-    const operator = await registerOperator('gql-introspect@example.com');
+    const manager = await registerManager('gql-introspect@example.com');
 
     const response = await graphql(
-      '{ __type(name: "Incident") { fields { name } } }',
+      '{ __type(name: "Alert") { fields { name } } }',
       {},
-      operator.accessToken,
+      manager.accessToken,
     ).expect(200);
 
     const fields = (response.body.data.__type.fields as Array<{ name: string }>).map(
@@ -99,7 +99,7 @@ describe('the GraphQL endpoint', () => {
     );
 
     expect(fields).toEqual(
-      expect.arrayContaining(['id', 'status', 'priority', 'version', 'events', 'notifiedContactCount']),
+      expect.arrayContaining(['id', 'status', 'priority', 'version', 'events', 'notifiedWorkerCount']),
     );
   });
 });
@@ -113,7 +113,7 @@ describe('authorisation on the GraphQL surface', () => {
     expect(response.body.data?.queueCounts ?? null).toBeNull();
   });
 
-  it('refuses an ordinary user, because the queue is the whole incident firehose', async () => {
+  it('refuses an ordinary user, because the queue is the whole alert firehose', async () => {
     const user = await register('gql-user@example.com');
 
     const response = await graphql(
@@ -125,54 +125,54 @@ describe('authorisation on the GraphQL surface', () => {
     expect(response.body.errors).toBeDefined();
   });
 
-  it('lets an operator read the queue', async () => {
+  it('lets a manager read the queue', async () => {
     const subject = await register('gql-subject@example.com');
     await activate(subject.accessToken, 'gql-key-0000000001');
 
-    const operator = await registerOperator('gql-operator-2@example.com');
+    const manager = await registerManager('gql-manager-2@example.com');
 
     const response = await graphql(
-      '{ incidents(limit: 10) { items { id status priority } hasMore } }',
+      '{ alerts(limit: 10) { items { id status priority } hasMore } }',
       {},
-      operator.accessToken,
+      manager.accessToken,
     ).expect(200);
 
     expect(response.body.errors).toBeUndefined();
-    expect(response.body.data.incidents.items).toHaveLength(1);
-    expect(response.body.data.incidents.items[0].status).toBe('active');
+    expect(response.body.data.alerts.items).toHaveLength(1);
+    expect(response.body.data.alerts.items[0].status).toBe('active');
   });
 });
 
 describe('field resolvers', () => {
   it('resolves the timeline only when it is asked for', async () => {
     const subject = await register('gql-timeline@example.com');
-    const incidentId = await activate(subject.accessToken, 'gql-key-0000000002');
-    const operator = await registerOperator('gql-operator-3@example.com');
+    const alertId = await activate(subject.accessToken, 'gql-key-0000000002');
+    const manager = await registerManager('gql-manager-3@example.com');
 
     const withoutEvents = await graphql(
-      'query($id: ID!) { incident(id: $id) { id status } }',
-      { id: incidentId },
-      operator.accessToken,
+      'query($id: ID!) { alert(id: $id) { id status } }',
+      { id: alertId },
+      manager.accessToken,
     ).expect(200);
-    expect(withoutEvents.body.data.incident.events).toBeUndefined();
+    expect(withoutEvents.body.data.alert.events).toBeUndefined();
 
     const withEvents = await graphql(
-      'query($id: ID!) { incident(id: $id) { id events { sequence type } } }',
-      { id: incidentId },
-      operator.accessToken,
+      'query($id: ID!) { alert(id: $id) { id events { sequence type } } }',
+      { id: alertId },
+      manager.accessToken,
     ).expect(200);
 
-    const events = withEvents.body.data.incident.events as Array<{ sequence: number; type: string }>;
+    const events = withEvents.body.data.alert.events as Array<{ sequence: number; type: string }>;
     expect(events.length).toBeGreaterThan(0);
-    expect(events[0]?.type).toBe('incident.activated');
+    expect(events[0]?.type).toBe('alert.activated');
   });
 
   it('supports fetching only the events after a known sequence', async () => {
     const subject = await register('gql-delta@example.com');
-    const incidentId = await activate(subject.accessToken, 'gql-key-0000000003');
+    const alertId = await activate(subject.accessToken, 'gql-key-0000000003');
 
     await request(http)
-      .post(`/api/v1/incidents/${incidentId}/location`)
+      .post(`/api/v1/alerts/${alertId}/location`)
       .set('Authorization', `Bearer ${subject.accessToken}`)
       .send({
         points: [
@@ -181,67 +181,67 @@ describe('field resolvers', () => {
       })
       .expect(202);
 
-    const operator = await registerOperator('gql-operator-4@example.com');
+    const manager = await registerManager('gql-manager-4@example.com');
 
     const all = await graphql(
-      'query($id: ID!) { incident(id: $id) { events { sequence } } }',
-      { id: incidentId },
-      operator.accessToken,
+      'query($id: ID!) { alert(id: $id) { events { sequence } } }',
+      { id: alertId },
+      manager.accessToken,
     ).expect(200);
-    const total = all.body.data.incident.events.length;
+    const total = all.body.data.alert.events.length;
 
     const delta = await graphql(
-      'query($id: ID!) { incident(id: $id) { events(after: 1) { sequence } } }',
-      { id: incidentId },
-      operator.accessToken,
+      'query($id: ID!) { alert(id: $id) { events(after: 1) { sequence } } }',
+      { id: alertId },
+      manager.accessToken,
     ).expect(200);
 
     // The mechanism the console uses on reconnect: ask for what came after what it has.
-    expect(delta.body.data.incident.events.length).toBe(total - 1);
-    expect(delta.body.data.incident.events[0].sequence).toBe(2);
+    expect(delta.body.data.alert.events.length).toBe(total - 1);
+    expect(delta.body.data.alert.events[0].sequence).toBe(2);
   });
 
-  it('returns a count of notified contacts, never the contacts themselves', async () => {
-    const subject = await register('gql-contacts@example.com');
+  it('returns a count of notified workers, never the workers themselves', async () => {
+    const subject = await register('gql-workers@example.com');
 
     await request(http)
-      .post('/api/v1/trusted-contacts')
+      .post('/api/v1/workers')
       .set('Authorization', `Bearer ${subject.accessToken}`)
       .send({ name: 'Private Person', phone: '+1 555 0177' })
       .expect(201);
 
-    const incidentId = await activate(subject.accessToken, 'gql-key-0000000004');
-    const operator = await registerOperator('gql-operator-5@example.com');
+    const alertId = await activate(subject.accessToken, 'gql-key-0000000004');
+    const manager = await registerManager('gql-manager-5@example.com');
 
     const response = await graphql(
-      'query($id: ID!) { incident(id: $id) { notifiedContactCount } }',
-      { id: incidentId },
-      operator.accessToken,
+      'query($id: ID!) { alert(id: $id) { notifiedWorkerCount } }',
+      { id: alertId },
+      manager.accessToken,
     ).expect(200);
 
-    expect(typeof response.body.data.incident.notifiedContactCount).toBe('number');
-    // An operator needs to know whether anybody was reached. They do not need the name or
-    // the number of the subject's family.
+    expect(typeof response.body.data.alert.notifiedWorkerCount).toBe('number');
+    // A manager needs to know whether anybody was reached. They do not need the name or
+    // the number of an assigned worker.
     expect(JSON.stringify(response.body)).not.toContain('Private Person');
     expect(JSON.stringify(response.body)).not.toContain('555 0177');
   });
 
-  it('does not expose a field for contact details at all', async () => {
-    const operator = await registerOperator('gql-operator-6@example.com');
+  it('does not expose a field for worker details at all', async () => {
+    const manager = await registerManager('gql-manager-6@example.com');
 
     const response = await graphql(
-      '{ __type(name: "Incident") { fields { name } } }',
+      '{ __type(name: "Alert") { fields { name } } }',
       {},
-      operator.accessToken,
+      manager.accessToken,
     ).expect(200);
 
     const fields = (response.body.data.__type.fields as Array<{ name: string }>).map(
       (field) => field.name,
     );
 
-    // Structural, not a filter. There is nowhere to put a contact detail even by accident.
-    expect(fields).not.toContain('contacts');
-    expect(fields).not.toContain('trustedContacts');
+    // Structural, not a filter. There is nowhere to put a worker detail even by accident.
+    expect(fields).not.toContain('workers');
+    expect(fields).not.toContain('workers');
     expect(fields).not.toContain('notifications');
   });
 });

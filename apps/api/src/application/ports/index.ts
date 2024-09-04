@@ -3,8 +3,8 @@ import type {
   DeliveryStatus,
   DomainError,
   GeoPoint,
-  IncidentPriority,
-  IncidentStatus,
+  AlertPriority,
+  AlertStatus,
   NotificationChannel,
   Page,
   PageRequest,
@@ -12,14 +12,14 @@ import type {
   SubscriptionStatus,
   SubscriptionTier,
   UserRole,
-} from '@guardianlink/shared-types';
+} from '@agricore/shared-types';
 
-import type { CountdownState } from '../../domain/incident/countdown';
-import type { IncidentState } from '../../domain/incident/incident';
+import type { CountdownState } from '../../domain/alert/countdown';
+import type { AlertState } from '../../domain/alert/alert';
 import type {
-  PendingIncidentEvent,
-  StoredIncidentEvent,
-} from '../../domain/incident/incident-events';
+  PendingAlertEvent,
+  StoredAlertEvent,
+} from '../../domain/alert/alert-events';
 
 /**
  * Every dependency a use case has, expressed as an interface it owns.
@@ -74,15 +74,15 @@ export interface RefreshTokenRepository {
   revokeAllForUser(userId: string, at: Date): Promise<number>;
 }
 
-// Trusted contacts ------------------------------------------------------------
+// Assigned workers ------------------------------------------------------------
 
-export interface TrustedContactRecord {
+export interface WorkerRecord {
   readonly id: string;
   readonly userId: string;
   readonly name: string;
   readonly email: string | null;
   readonly phone: string | null;
-  readonly relationship: string | null;
+  readonly jobRole: string | null;
   readonly priority: number;
   readonly preferredChannel: 'email' | 'sms' | 'push' | 'any';
   readonly canViewLiveLocation: boolean;
@@ -92,19 +92,19 @@ export interface TrustedContactRecord {
   readonly deletedAt: Date | null;
 }
 
-export interface TrustedContactRepository {
-  findById(id: string): Promise<TrustedContactRecord | null>;
-  listForUser(userId: string): Promise<TrustedContactRecord[]>;
+export interface WorkerRepository {
+  findById(id: string): Promise<WorkerRecord | null>;
+  listForUser(userId: string): Promise<WorkerRecord[]>;
   countForUser(userId: string): Promise<number>;
-  insert(record: TrustedContactRecord): Promise<void>;
-  update(record: TrustedContactRecord): Promise<void>;
+  insert(record: WorkerRecord): Promise<void>;
+  update(record: WorkerRecord): Promise<void>;
   softDelete(id: string, at: Date): Promise<void>;
   deleteAllForUser(userId: string): Promise<void>;
 }
 
-// Safety sessions and countdowns ----------------------------------------------
+// Field operations and countdowns ----------------------------------------------
 
-export interface SafetySessionRecord {
+export interface FieldOperationRecord {
   readonly id: string;
   readonly userId: string;
   readonly status: 'active' | 'completed' | 'expired' | 'escalated';
@@ -116,13 +116,13 @@ export interface SafetySessionRecord {
   readonly shareLiveLocation: boolean;
 }
 
-export interface SafetySessionRepository {
-  findById(id: string): Promise<SafetySessionRecord | null>;
-  findActiveForUser(userId: string): Promise<SafetySessionRecord | null>;
-  listForUser(userId: string, page: PageRequest): Promise<Page<SafetySessionRecord>>;
-  insert(record: SafetySessionRecord): Promise<void>;
-  update(record: SafetySessionRecord): Promise<void>;
-  findOverdue(now: Date, limit: number): Promise<SafetySessionRecord[]>;
+export interface FieldOperationRepository {
+  findById(id: string): Promise<FieldOperationRecord | null>;
+  findActiveForUser(userId: string): Promise<FieldOperationRecord | null>;
+  listForUser(userId: string, page: PageRequest): Promise<Page<FieldOperationRecord>>;
+  insert(record: FieldOperationRecord): Promise<void>;
+  update(record: FieldOperationRecord): Promise<void>;
+  findOverdue(now: Date, limit: number): Promise<FieldOperationRecord[]>;
   deleteAllForUser(userId: string): Promise<void>;
 }
 
@@ -133,13 +133,13 @@ export interface CountdownRepository {
   deleteAllForUser(userId: string): Promise<void>;
 }
 
-// Incidents -------------------------------------------------------------------
+// Alerts -------------------------------------------------------------------
 
-export interface IncidentQueryFilter {
-  readonly status?: IncidentStatus | undefined;
-  readonly priority?: IncidentPriority | undefined;
+export interface AlertQueryFilter {
+  readonly status?: AlertStatus | undefined;
+  readonly priority?: AlertPriority | undefined;
   readonly claimed?: 'any' | 'mine' | 'unclaimed' | undefined;
-  readonly operatorId?: string | undefined;
+  readonly managerId?: string | undefined;
   readonly userId?: string | undefined;
   readonly search?: string | undefined;
 }
@@ -148,43 +148,43 @@ export interface IncidentQueryFilter {
  * The one write method that matters is `save`, which takes the new aggregate state, the
  * events it produced, and the version the caller believed it was updating. The adapter
  * performs the version check and the event append in a single transaction. Splitting
- * those into two calls would open a window where an incident advances without its
+ * those into two calls would open a window where an alert advances without its
  * timeline entry, and that is precisely the thing that makes an audit trail worthless.
  */
-export interface IncidentRepository {
-  findById(id: string): Promise<IncidentState | null>;
-  findByIdempotencyKey(userId: string, key: string): Promise<IncidentState | null>;
+export interface AlertRepository {
+  findById(id: string): Promise<AlertState | null>;
+  findByIdempotencyKey(userId: string, key: string): Promise<AlertState | null>;
 
   create(input: {
-    state: IncidentState;
-    events: readonly PendingIncidentEvent[];
+    state: AlertState;
+    events: readonly PendingAlertEvent[];
     idempotencyKey: string | null;
     outbox: readonly OutboxMessage[];
-  }): Promise<Result<{ state: IncidentState; events: StoredIncidentEvent[] }, DomainError>>;
+  }): Promise<Result<{ state: AlertState; events: StoredAlertEvent[] }, DomainError>>;
 
   save(input: {
-    state: IncidentState;
-    events: readonly PendingIncidentEvent[];
+    state: AlertState;
+    events: readonly PendingAlertEvent[];
     expectedVersion: number;
     outbox?: readonly OutboxMessage[];
-  }): Promise<Result<{ state: IncidentState; events: StoredIncidentEvent[] }, DomainError>>;
+  }): Promise<Result<{ state: AlertState; events: StoredAlertEvent[] }, DomainError>>;
 
-  listEvents(incidentId: string, afterSequence: number, limit: number): Promise<StoredIncidentEvent[]>;
-  latestSequence(incidentId: string): Promise<number>;
-  query(filter: IncidentQueryFilter, page: PageRequest): Promise<Page<IncidentState>>;
-  countByStatus(status: IncidentStatus): Promise<number>;
+  listEvents(alertId: string, afterSequence: number, limit: number): Promise<StoredAlertEvent[]>;
+  latestSequence(alertId: string): Promise<number>;
+  query(filter: AlertQueryFilter, page: PageRequest): Promise<Page<AlertState>>;
+  countByStatus(status: AlertStatus): Promise<number>;
   countUnclaimed(now: Date): Promise<number>;
   deleteAllForUser(userId: string): Promise<void>;
 }
 
 /**
  * Location telemetry. Backed by MongoDB in production with a TTL index, and by an array
- * in tests. Kept separate from IncidentRepository because it is append-only,
- * high-volume, and nothing about an incident's legal state depends on reading it back.
+ * in tests. Kept separate from AlertRepository because it is append-only,
+ * high-volume, and nothing about an alert's legal state depends on reading it back.
  */
 export interface LocationTelemetryRepository {
-  append(incidentId: string, userId: string, points: readonly GeoPoint[]): Promise<void>;
-  listForIncident(incidentId: string, limit: number): Promise<GeoPoint[]>;
+  append(alertId: string, userId: string, points: readonly GeoPoint[]): Promise<void>;
+  listForAlert(alertId: string, limit: number): Promise<GeoPoint[]>;
   deleteForUser(userId: string): Promise<void>;
   deleteOlderThan(cutoff: Date): Promise<number>;
 }
@@ -197,7 +197,7 @@ export interface OutboxMessage {
   readonly payload: Readonly<Record<string, unknown>>;
   readonly createdAt: Date;
   readonly correlationId: string;
-  /** Set for messages that must not be delivered twice, such as contact alerts. */
+  /** Set for messages that must not be delivered twice, such as worker alerts. */
   readonly dedupeKey: string | null;
 }
 
@@ -211,8 +211,8 @@ export interface OutboxRepository {
 
 export interface NotificationRecord {
   readonly id: string;
-  readonly incidentId: string;
-  readonly contactId: string;
+  readonly alertId: string;
+  readonly workerId: string;
   readonly channel: NotificationChannel;
   readonly status: DeliveryStatus;
   readonly attempts: number;
@@ -225,7 +225,7 @@ export interface NotificationRecord {
 
 export interface NotificationRepository {
   findByDedupeKey(key: string): Promise<NotificationRecord | null>;
-  listForIncident(incidentId: string): Promise<NotificationRecord[]>;
+  listForAlert(alertId: string): Promise<NotificationRecord[]>;
   insert(record: NotificationRecord): Promise<void>;
   update(record: NotificationRecord): Promise<void>;
   deleteForUser(userId: string): Promise<void>;
@@ -287,10 +287,10 @@ export interface StoreReceiptVerifier {
 
 export interface PrivacySettingsRecord {
   readonly userId: string;
-  readonly shareLocationWithContacts: boolean;
-  readonly shareLocationWithOperators: boolean;
+  readonly shareLocationWithWorkers: boolean;
+  readonly shareLocationWithManagers: boolean;
   readonly storePreciseLocationHistory: boolean;
-  readonly incidentRetentionDays: number;
+  readonly alertRetentionDays: number;
   readonly locationRetentionDays: number;
   readonly notificationLogRetentionDays: number;
   readonly allowAnonymisedProductAnalytics: boolean;
@@ -366,9 +366,9 @@ export interface TokenService {
   verifyAccessToken(token: string): Result<AccessTokenPayload, DomainError>;
   issueRefreshToken(): { token: string; hash: string; expiresInSeconds: number };
   hashRefreshToken(token: string): string;
-  /** Signed, time-boxed, single-incident link for a trusted contact. */
-  issueContactViewToken(input: { incidentId: string; contactId: string; ttlSeconds: number }): string;
-  verifyContactViewToken(token: string): Result<{ incidentId: string; contactId: string }, DomainError>;
+  /** Signed, time-boxed, single-alert link for an assigned worker. */
+  issueWorkerViewToken(input: { alertId: string; workerId: string; ttlSeconds: number }): string;
+  verifyWorkerViewToken(token: string): Result<{ alertId: string; workerId: string }, DomainError>;
 }
 
 export interface RateLimiter {
@@ -385,9 +385,9 @@ export interface DistributedLock {
 }
 
 export interface RealtimePublisher {
-  incidentCreated(state: IncidentState): void;
-  incidentUpdated(state: IncidentState, changedFields: readonly string[]): void;
-  incidentEventAppended(event: StoredIncidentEvent): void;
+  alertCreated(state: AlertState): void;
+  alertUpdated(state: AlertState, changedFields: readonly string[]): void;
+  alertEventAppended(event: StoredAlertEvent): void;
   queueChanged(counts: { activeCount: number; unclaimedCount: number }): void;
 }
 

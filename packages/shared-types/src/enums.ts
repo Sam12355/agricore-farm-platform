@@ -1,17 +1,17 @@
 export const UserRole = {
   User: 'user',
-  Operator: 'operator',
+  Manager: 'manager',
   Admin: 'admin',
 } as const;
 export type UserRole = (typeof UserRole)[keyof typeof UserRole];
 
-export const SafetySessionStatus = {
+export const FieldOperationStatus = {
   Active: 'active',
   Completed: 'completed',
   Expired: 'expired',
   Escalated: 'escalated',
 } as const;
-export type SafetySessionStatus = (typeof SafetySessionStatus)[keyof typeof SafetySessionStatus];
+export type FieldOperationStatus = (typeof FieldOperationStatus)[keyof typeof FieldOperationStatus];
 
 export const CountdownStatus = {
   Pending: 'pending',
@@ -20,49 +20,49 @@ export const CountdownStatus = {
 } as const;
 export type CountdownStatus = (typeof CountdownStatus)[keyof typeof CountdownStatus];
 
-export const IncidentStatus = {
+export const AlertStatus = {
   Active: 'active',
   Acknowledged: 'acknowledged',
   Resolved: 'resolved',
   Cancelled: 'cancelled',
 } as const;
-export type IncidentStatus = (typeof IncidentStatus)[keyof typeof IncidentStatus];
+export type AlertStatus = (typeof AlertStatus)[keyof typeof AlertStatus];
 
-export const IncidentPriority = {
+export const AlertPriority = {
   Low: 'low',
   Standard: 'standard',
   High: 'high',
   Critical: 'critical',
 } as const;
-export type IncidentPriority = (typeof IncidentPriority)[keyof typeof IncidentPriority];
+export type AlertPriority = (typeof AlertPriority)[keyof typeof AlertPriority];
 
-export const IncidentTrigger = {
-  SosCountdown: 'sos_countdown',
-  ManualPanic: 'manual_panic',
-  SessionOverdue: 'session_overdue',
-  OperatorCreated: 'operator_created',
+export const AlertTrigger = {
+  FieldCountdown: 'field_countdown',
+  ManualReport: 'manual_report',
+  OperationOverdue: 'operation_overdue',
+  ManagerCreated: 'manager_created',
 } as const;
-export type IncidentTrigger = (typeof IncidentTrigger)[keyof typeof IncidentTrigger];
+export type AlertTrigger = (typeof AlertTrigger)[keyof typeof AlertTrigger];
 
 /**
  * Timeline event types. Adding one here forces the client renderers to handle it,
  * because the union is exhaustive on both sides.
  */
-export const IncidentEventType = {
-  Activated: 'incident.activated',
-  LocationRecorded: 'incident.location_recorded',
-  ContactNotified: 'incident.contact_notified',
-  ContactAcknowledged: 'incident.contact_acknowledged',
-  NotificationFailed: 'incident.notification_failed',
-  OperatorClaimed: 'incident.operator_claimed',
-  OperatorReleased: 'incident.operator_released',
-  OperatorNoteAdded: 'incident.operator_note_added',
-  PriorityChanged: 'incident.priority_changed',
-  StatusChanged: 'incident.status_changed',
-  Resolved: 'incident.resolved',
-  Cancelled: 'incident.cancelled',
+export const AlertEventType = {
+  Activated: 'alert.activated',
+  LocationRecorded: 'alert.location_recorded',
+  WorkerNotified: 'alert.worker_notified',
+  WorkerAcknowledged: 'alert.worker_acknowledged',
+  NotificationFailed: 'alert.notification_failed',
+  ManagerClaimed: 'alert.manager_claimed',
+  ManagerReleased: 'alert.manager_released',
+  ManagerNoteAdded: 'alert.manager_note_added',
+  PriorityChanged: 'alert.priority_changed',
+  StatusChanged: 'alert.status_changed',
+  Resolved: 'alert.resolved',
+  Cancelled: 'alert.cancelled',
 } as const;
-export type IncidentEventType = (typeof IncidentEventType)[keyof typeof IncidentEventType];
+export type AlertEventType = (typeof AlertEventType)[keyof typeof AlertEventType];
 
 export const NotificationChannel = {
   Email: 'email',
@@ -86,7 +86,7 @@ export type DeliveryStatus = (typeof DeliveryStatus)[keyof typeof DeliveryStatus
 export const SubscriptionTier = {
   Free: 'free',
   Plus: 'plus',
-  Family: 'family',
+  Team: 'team',
 } as const;
 export type SubscriptionTier = (typeof SubscriptionTier)[keyof typeof SubscriptionTier];
 

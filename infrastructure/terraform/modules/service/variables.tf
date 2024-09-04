@@ -1,7 +1,7 @@
 variable "project" {
   type        = string
   description = "Project name, used as a resource-name prefix and a cost-allocation tag."
-  default     = "guardianlink"
+  default     = "agricore"
 }
 
 variable "environment" {

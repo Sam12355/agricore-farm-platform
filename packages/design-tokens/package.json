@@ -1,8 +1,8 @@
 {
-  "name": "@guardianlink/design-tokens",
+  "name": "@agricore/design-tokens",
   "version": "0.1.0",
   "private": true,
-  "description": "GuardianLink design tokens with generators for CSS custom properties, Swift and Kotlin.",
+  "description": "AgriCore design tokens with generators for CSS custom properties, Swift and Kotlin.",
   "license": "MIT",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

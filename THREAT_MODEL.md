@@ -1,6 +1,6 @@
 # Threat model
 
-Scope: the GuardianLink platform as built. Method is loosely STRIDE, but organised by what an
+Scope: the AgriCore platform as built. Method is loosely STRIDE, but organised by what an
 attacker wants rather than by category, because that is how the mitigations actually cluster.
 
 The thing worth protecting most is not the account. It is the answer to "where is this person right
@@ -10,10 +10,10 @@ now", and the list of people they trust.
 
 | Asset | Why it matters |
 |-------|----------------|
-| Live location during an incident | Discloses where someone is at the moment they are most vulnerable |
+| Live location during an alert | Discloses where someone is at the moment they are most vulnerable |
 | Location history | Reveals home, work, routine, and who they visit |
-| Trusted-contact list | A social graph of the people someone depends on |
-| Incident timeline | Reveals that someone felt unsafe, and when |
+| Trusted-worker list | A social graph of the people someone depends on |
+| Alert timeline | Reveals that an operation went wrong, where and when |
 | Credentials and tokens | Access to all of the above |
 | Audit records | Accountability for privileged access |
 
@@ -24,7 +24,7 @@ flowchart LR
     subgraph untrusted["Untrusted"]
         PHONE["Mobile app"]
         BROWSER["Browser"]
-        LINK["Contact link recipient"]
+        LINK["Worker link recipient"]
     end
     subgraph edge["Edge"]
         ALB["Load balancer, TLS"]
@@ -66,7 +66,7 @@ is not protected. Accepted and listed in SECURITY.md.
 
 ### T2. Broken authorisation, horizontal
 
-**Vector:** an authenticated user reads or mutates another user's incident, contacts, sessions or
+**Vector:** an authenticated user reads or mutates another user's alert, workers, sessions or
 export by guessing an identifier.
 
 **Mitigations:** ownership enforced in the service layer where the record is loaded, not only at the
@@ -79,10 +79,10 @@ authorised per room. Ten integration tests cover exactly this, one per operation
 
 ### T3. Broken authorisation, vertical
 
-**Vector:** an ordinary user performs an operator action; an operator performs an admin action.
+**Vector:** an ordinary user performs a manager action; a manager performs an admin action.
 
-**Mitigations:** roles are a token claim set at issue, never accepted from a request body; operator
-routes carry a role requirement and the service checks the role again; resolving as an operator
+**Mitigations:** roles are a token claim set at issue, never accepted from a request body; manager
+routes carry a role requirement and the service checks the role again; resolving as a manager
 additionally requires holding a live claim.
 
 **Residual:** a role change does not affect an already-issued access token until it expires. This is
@@ -94,47 +94,47 @@ so the behaviour is deliberate rather than accidental.
 **Vector:** location reaches someone who should not see it, or is retained after it stops being
 useful.
 
-**Mitigations:** location accepted only from the subject and only while the incident is open;
-visibility gated on two independent switches; contact links scoped to one incident and one contact
+**Mitigations:** location accepted only from the subject and only while the alert is open;
+visibility gated on two independent switches; worker links scoped to one alert and one worker
 and time-boxed; coordinates redacted from every log sink; precise history off by default; TTL index
 on telemetry; retention configurable within bounds, with a floor and a ceiling.
 
-**Residual:** an operator on duty can see live location for any active incident, which is the job.
-That access is audited. There is no cell-level or region-level restriction on which operator sees
-which incident.
+**Residual:** a manager on duty can see live location for any active alert, which is the job.
+That access is audited. There is no cell-level or region-level restriction on which manager sees
+which alert.
 
-### T5. Replay and duplicate incidents
+### T5. Replay and duplicate alerts
 
-**Vector:** a retried or replayed activation creates several incidents, so a family gets five
+**Vector:** a retried or replayed activation creates several alerts, so everyone on the farm gets five
 alerts for one event.
 
 **Mitigations:** mandatory idempotency key minted when the countdown starts, not when it fires, so a
 crash mid-countdown still deduplicates; enforced at the HTTP layer and again by a unique index;
-mismatched body under a reused key is a 409; outbox messages carry a dedupe key of incident plus
-contact, checked by the consumer, which is what makes manual replay of a dead-lettered message safe.
+mismatched body under a reused key is a 409; outbox messages carry a dedupe key of alert plus
+worker, checked by the consumer, which is what makes manual replay of a dead-lettered message safe.
 
 **Residual:** a client that mints a fresh key for the same real-world event defeats this. Mitigated
 by minting at countdown start rather than at send time.
 
 ### T6. Notification abuse
 
-**Vector:** using the platform to send unwanted messages to a third party, or to flood a contact.
+**Vector:** using the platform to send unwanted messages to a third party, or to flood a worker.
 
-**Mitigations:** notifications only go to contacts the account owner added, and only when an
-incident exists; rate limiting on contact creation and on the acknowledgement endpoint; free-tier
-contact cap; delivery deduplicated per incident and contact.
+**Mitigations:** notifications only go to workers the account owner added, and only when an
+alert exists; rate limiting on worker creation and on the acknowledgement endpoint; free-tier
+worker cap; delivery deduplicated per alert and worker.
 
-**Residual:** contact addresses are unverified, so someone can add a number that is not theirs and
-cause one message to it per incident. Verification is the top roadmap item. Documented rather than
+**Residual:** worker addresses are unverified, so someone can add a number that is not theirs and
+cause one message to it per alert. Verification is the top roadmap item. Documented rather than
 glossed over.
 
 ### T7. WebSocket hijacking
 
-**Vector:** subscribing to a stranger's incident stream, or continuing to receive events after
+**Vector:** subscribing to a stranger's alert stream, or continuing to receive events after
 losing access.
 
 **Mitigations:** token verified at handshake and identity pinned to the socket, never read from a
-message payload; per-subscription ownership check; resume replays only events for an incident the
+message payload; per-subscription ownership check; resume replays only events for an alert the
 caller may see.
 
 **Residual:** an access token valid at connect keeps the socket alive until it disconnects, even if
@@ -176,7 +176,7 @@ on the roadmap.
 
 ### T11. Privilege escalation through deletion
 
-**Vector:** an operator who accessed someone's location gets that account closed to erase the trail.
+**Vector:** a manager who accessed someone's location gets that account closed to erase the trail.
 
 **Mitigations:** audit records have no cascade delete; the user row is anonymised rather than
 removed so audit references resolve to a tombstone; audit tables reject UPDATE and DELETE at the
@@ -207,6 +207,7 @@ Mitigated by also redacting `note` and `body`, and by review.
 
 ## Out of scope
 
-Physical device compromise; a malicious operator with legitimate access acting within their
+Physical device compromise; a malicious manager with legitimate access acting within their
 permissions, beyond auditing it; nation-state adversaries; denial of service against infrastructure;
-anything about real emergency services, which this system deliberately never contacts.
+anything about a real farm, real machinery or a real agronomist, none of which this system is
+connected to.

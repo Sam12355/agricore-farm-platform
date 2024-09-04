@@ -30,7 +30,7 @@ const textPairs: Array<{ fg: ColorName; bg: ColorName; label: string }> = [
   { fg: 'status-critical', bg: 'status-critical-subtle', label: 'critical badge' },
   { fg: 'status-neutral', bg: 'surface-base', label: 'neutral status on page' },
   { fg: 'text-inverse', bg: 'brand-primary', label: 'label on filled primary button' },
-  { fg: 'text-inverse', bg: 'status-critical', label: 'label on filled SOS button' },
+  { fg: 'text-inverse', bg: 'status-critical', label: 'label on a filled critical button' },
 ];
 
 const nonTextPairs: Array<{ fg: ColorName; bg: ColorName; label: string }> = [

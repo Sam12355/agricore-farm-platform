@@ -6,14 +6,14 @@
 #
 #   brew install xcodegen
 #   xcodegen generate
-#   open GuardianLink.xcodeproj
+#   open AgriCore.xcodeproj
 #
 # The generated project is gitignored, which is the point.
 
-name: GuardianLink
+name: AgriCore
 
 options:
-  bundleIdPrefix: com.guardianlink
+  bundleIdPrefix: com.agricore
   deploymentTarget:
     iOS: '16.0'
   createIntermediateGroups: true
@@ -40,89 +40,89 @@ configs:
   Release: release
 
 targets:
-  GuardianLink:
+  AgriCore:
     type: application
     platform: iOS
     sources:
-      - path: GuardianLink
+      - path: AgriCore
     dependencies:
-      - target: GuardianLinkWidget
-      - target: GuardianLinkIntents
+      - target: AgriCoreWidget
+      - target: AgriCoreIntents
     settings:
       base:
-        INFOPLIST_FILE: GuardianLink/Info.plist
-        PRODUCT_NAME: GuardianLink
+        INFOPLIST_FILE: AgriCore/Info.plist
+        PRODUCT_NAME: AgriCore
         TARGETED_DEVICE_FAMILY: '1,2'
         # Dynamic Type and VoiceOver are tested, so the build should not silently disable
         # the things that make them work.
         ENABLE_BITCODE: NO
       configs:
         Debug:
-          PRODUCT_BUNDLE_IDENTIFIER: com.guardianlink.debug
+          PRODUCT_BUNDLE_IDENTIFIER: com.agricore.debug
           API_BASE_URL: http:/$()/localhost:3001
           SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
         Staging:
-          PRODUCT_BUNDLE_IDENTIFIER: com.guardianlink.staging
+          PRODUCT_BUNDLE_IDENTIFIER: com.agricore.staging
           API_BASE_URL: https:/$()/staging.example.invalid
         Release:
-          PRODUCT_BUNDLE_IDENTIFIER: com.guardianlink
+          PRODUCT_BUNDLE_IDENTIFIER: com.agricore
           API_BASE_URL: https:/$()/api.example.invalid
 
-  GuardianLinkWidget:
+  AgriCoreWidget:
     type: app-extension
     platform: iOS
     sources:
-      - path: GuardianLinkWidget
+      - path: AgriCoreWidget
     settings:
       base:
-        INFOPLIST_FILE: GuardianLinkWidget/Info.plist
-        PRODUCT_BUNDLE_IDENTIFIER: com.guardianlink.widget
+        INFOPLIST_FILE: AgriCoreWidget/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: com.agricore.widget
 
-  GuardianLinkIntents:
+  AgriCoreIntents:
     type: app-extension
     platform: iOS
     sources:
-      - path: GuardianLinkIntents
+      - path: AgriCoreIntents
     settings:
       base:
-        INFOPLIST_FILE: GuardianLinkIntents/Info.plist
-        PRODUCT_BUNDLE_IDENTIFIER: com.guardianlink.intents
+        INFOPLIST_FILE: AgriCoreIntents/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: com.agricore.intents
 
-  GuardianLinkTests:
+  AgriCoreTests:
     type: bundle.unit-test
     platform: iOS
     sources:
-      - path: GuardianLinkTests
+      - path: AgriCoreTests
     dependencies:
-      - target: GuardianLink
+      - target: AgriCore
     settings:
       base:
         # The test target needs no network stubs, no simulator entitlements and no
         # StoreKit configuration, because every dependency is behind a protocol.
         BUNDLE_LOADER: $(TEST_HOST)
 
-  GuardianLinkUITests:
+  AgriCoreUITests:
     type: bundle.ui-testing
     platform: iOS
     sources:
-      - path: GuardianLinkUITests
+      - path: AgriCoreUITests
     dependencies:
-      - target: GuardianLink
+      - target: AgriCore
 
 schemes:
-  GuardianLink:
+  AgriCore:
     build:
       targets:
-        GuardianLink: all
-        GuardianLinkWidget: all
-        GuardianLinkIntents: all
+        AgriCore: all
+        AgriCoreWidget: all
+        AgriCoreIntents: all
     run:
       config: Debug
     test:
       config: Debug
       gatherCoverageData: true
       targets:
-        - GuardianLinkTests
-        - GuardianLinkUITests
+        - AgriCoreTests
+        - AgriCoreUITests
     archive:
       config: Release

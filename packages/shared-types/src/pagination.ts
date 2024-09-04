@@ -1,8 +1,8 @@
 /**
  * Cursor pagination rather than offset.
  *
- * The operator queue receives inserts continuously. With OFFSET, an incident arriving
- * between page one and page two shifts everything down and the operator silently skips
+ * The manager queue receives inserts continuously. With OFFSET, an alert arriving
+ * between page one and page two shifts everything down and the manager silently skips
  * a row. An opaque cursor anchored on (sortKey, id) does not have that problem.
  */
 
