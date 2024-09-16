@@ -122,13 +122,13 @@ actor HttpApiClient: ApiClient {
     ) async throws -> Alert {
         var body: [String: Any] = ["trigger": trigger]
         if let countdownId { body["countdownId"] = countdownId.uuidString.lowercased() }
-        if let occurredAt { body["occurredAt"] = ISO8601DateFormatter.guardianLink.string(from: occurredAt) }
+        if let occurredAt { body["occurredAt"] = ISO8601DateFormatter.agriCore.string(from: occurredAt) }
         if let location {
             body["location"] = [
                 "latitude": location.latitude,
                 "longitude": location.longitude,
                 "accuracyMetres": location.accuracyMetres,
-                "capturedAt": ISO8601DateFormatter.guardianLink.string(from: location.capturedAt),
+                "capturedAt": ISO8601DateFormatter.agriCore.string(from: location.capturedAt),
             ]
         }
 
@@ -153,7 +153,7 @@ actor HttpApiClient: ApiClient {
                         "latitude": point.latitude,
                         "longitude": point.longitude,
                         "accuracyMetres": point.accuracyMetres,
-                        "capturedAt": ISO8601DateFormatter.guardianLink.string(from: point.capturedAt),
+                        "capturedAt": ISO8601DateFormatter.agriCore.string(from: point.capturedAt),
                     ]
                 },
             ]
@@ -230,7 +230,7 @@ actor HttpApiClient: ApiClient {
         switch http.statusCode {
         case 200 ..< 300:
             if T.self == EmptyResponse.self, let empty = EmptyResponse() as? T { return empty }
-            return try JSONDecoder.guardianLink.decode(T.self, from: data)
+            return try JSONDecoder.agriCore.decode(T.self, from: data)
 
         case 401 where authenticated && !isRetry:
             // One retry, after a refresh. isRetry stops an infinite loop when the refresh
@@ -250,7 +250,7 @@ actor HttpApiClient: ApiClient {
             throw ApiError.notFound
 
         case 409:
-            let decoded = try? JSONDecoder.guardianLink.decode(ErrorEnvelope.self, from: data)
+            let decoded = try? JSONDecoder.agriCore.decode(ErrorEnvelope.self, from: data)
             throw ApiError.conflict(currentVersion: decoded?.error.details?.currentVersion)
 
         case 429:
@@ -258,7 +258,7 @@ actor HttpApiClient: ApiClient {
             throw ApiError.rateLimited(retryAfter: retryAfter)
 
         case 400, 422:
-            let decoded = try? JSONDecoder.guardianLink.decode(ErrorEnvelope.self, from: data)
+            let decoded = try? JSONDecoder.agriCore.decode(ErrorEnvelope.self, from: data)
             throw ApiError.validation(message: decoded?.error.message ?? "That request was not valid.")
 
         default:
@@ -359,7 +359,7 @@ private struct ErrorEnvelope: Decodable {
 }
 
 extension ISO8601DateFormatter {
-    static let guardianLink: ISO8601DateFormatter = {
+    static let agriCore: ISO8601DateFormatter = {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         return formatter
@@ -367,7 +367,7 @@ extension ISO8601DateFormatter {
 }
 
 extension JSONDecoder {
-    static let guardianLink: JSONDecoder = {
+    static let agriCore: JSONDecoder = {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .custom { decoder in
             let container = try decoder.singleValueContainer()
@@ -376,7 +376,7 @@ extension JSONDecoder {
             // The API always sends fractional seconds, but a date without them is valid
             // ISO 8601 and a decoder that only accepts one form fails on a field somebody
             // formats slightly differently later.
-            if let date = ISO8601DateFormatter.guardianLink.date(from: raw) { return date }
+            if let date = ISO8601DateFormatter.agriCore.date(from: raw) { return date }
 
             let fallback = ISO8601DateFormatter()
             fallback.formatOptions = [.withInternetDateTime]
