@@ -25,7 +25,7 @@ Node 20 or newer and pnpm 9. Nothing else is required for the default path.
 
 ## Commit messages
 
-Conventional Commits. The release-note generator in `native-release-lab` reads these, so the prefix
+Conventional Commits. The release-note generator in `buildtrack-site-manager` reads these, so the prefix
 is load-bearing rather than decorative.
 
 ```
