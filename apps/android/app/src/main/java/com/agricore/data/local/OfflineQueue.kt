@@ -15,9 +15,10 @@ import kotlinx.serialization.json.Json
 /**
  * The offline operation queue, in Room.
  *
- * A safety app that only works with a signal is not a safety app. Every operation that
- * changes server state is written here first and sent afterwards, so raising an alert in a
- * car park with no bars records the intent and delivers it when signal returns.
+ * An app for people out in fields that only works with a signal is not much of an app.
+ * Every operation that changes server state is written here first and sent afterwards, so
+ * raising an alert in a block with no bars records the intent and delivers it when signal
+ * returns.
  *
  * Three rules make replay safe, and they match the iOS implementation exactly:
  *
