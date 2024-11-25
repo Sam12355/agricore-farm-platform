@@ -241,10 +241,13 @@ farm. Enforced twice: at the HTTP layer and again at the database with a unique 
 
 Honest list. These are things that are missing or unfinished, not things I forgot to mention.
 
-- **iOS is not compiled.** No macOS machine was available. The Swift sources, the widget, the
-  App Intents and the XCTest suites are complete and reviewable, and the CI job exists, but
-  nothing here claims the iOS app builds. Android is in the same position: the SDK is present
-  but there is no Gradle distribution on the build machine.
+- **The mobile apps are source, not shipped apps, and that is the scope.** This repository is a
+  vertical slice: it exists so the client half of the design can be read next to the server half
+  it talks to. The Swift and Kotlin sources, the widget, the App Intents and the mirrored test
+  suites are complete and reviewable, and the CI jobs are written. They have not been compiled
+  here, because that needs a macOS machine for iOS and a Gradle distribution for Android, and
+  neither was on the build machine. Nothing anywhere in this repository claims the apps build,
+  run on a device, or have been submitted anywhere.
 - **Terraform is not validated locally.** The CLI was not installed on the build machine. CI runs
   `fmt` and `validate`; no `plan` has been run against a real account and nothing was deployed.
 - **Worker verification is not implemented.** The `verified_at` column exists and the notification
