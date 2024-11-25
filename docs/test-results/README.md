@@ -22,8 +22,8 @@ it caught a `docker run` line in [containers.md](containers.md) that would not h
 
 | Suite | State | To verify it yourself |
 |-------|-------|-----------------------|
-| iOS unit and UI tests | Never executed. The build machine is Windows with no Xcode and no Swift toolchain | On macOS: `cd apps/ios && xcodebuild test -scheme AgriCore -destination 'platform=iOS Simulator,name=iPhone 15'` |
-| Android unit tests | Not executed. The SDK and a JDK are present, but no Gradle distribution is installed and no wrapper binary is committed | `cd apps/android && gradle testDebugUnitTest` (or generate a wrapper first with `gradle wrapper`) |
+| iOS unit and UI tests | Not executed, and not part of what this repository sets out to prove. The mobile modules are here so the client half of the design can be read; the build machine is Windows with no Xcode and no Swift toolchain | On macOS: `cd apps/ios && xcodegen generate && xcodebuild test -scheme AgriCore -destination 'platform=iOS Simulator,name=iPhone 15'` |
+| Android unit tests | Not executed, for the same reason. The SDK and a JDK are present, but no Gradle distribution is installed and no wrapper binary is committed | `cd apps/android && gradle wrapper && ./gradlew testDebugUnitTest` |
 | Android instrumented tests | Not executed, for the same reason plus no emulator | `cd apps/android && ./gradlew connectedDebugAndroidTest` with a device or AVD attached |
 | Playwright browser journeys | Specs written; browsers not downloaded on this machine | `pnpm --filter @agricore/web exec playwright install chromium && pnpm --filter @agricore/web test:e2e` |
 | Terraform fmt and validate | No Terraform CLI on the build machine | `cd infrastructure/terraform/environments/dev && terraform init -backend=false && terraform validate` |
