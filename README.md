@@ -174,11 +174,6 @@ which needs infrastructure is a test suite people stop running.
 
 Recorded output from a real run is in [docs/test-results/](docs/test-results/).
 
-## Screenshots and recordings
-
-[docs/media/](docs/media/) describes what each asset shows and how to reproduce it. See the
-[known limitations](#known-limitations) about which of these currently exist.
-
 ## Repository layout
 
 ```text
@@ -241,13 +236,9 @@ farm. Enforced twice: at the HTTP layer and again at the database with a unique 
 
 Honest list. These are things that are missing or unfinished, not things I forgot to mention.
 
-- **The mobile apps are source, not shipped apps, and that is the scope.** This repository is a
-  vertical slice: it exists so the client half of the design can be read next to the server half
-  it talks to. The Swift and Kotlin sources, the widget, the App Intents and the mirrored test
-  suites are complete and reviewable, and the CI jobs are written. They have not been compiled
-  here, because that needs a macOS machine for iOS and a Gradle distribution for Android, and
-  neither was on the build machine. Nothing anywhere in this repository claims the apps build,
-  run on a device, or have been submitted anywhere.
+- **The mobile apps are not built here.** The Swift and Kotlin sources, the widget, the App
+  Intents and the mirrored test suites are complete and reviewable; the toolchains to compile
+  them are not on the build machine.
 - **Terraform is not validated locally.** The CLI was not installed on the build machine. CI runs
   `fmt` and `validate`; no `plan` has been run against a real account and nothing was deployed.
 - **Worker verification is not implemented.** The `verified_at` column exists and the notification
@@ -260,8 +251,6 @@ Honest list. These are things that are missing or unfinished, not things I forgo
   worker and per time of day.
 - **No push notifications to real devices.** Mock providers only, by design. The APNs and FCM
   adapters are written against the same interface but have never been run.
-- **Screenshots and recordings are described but not captured.** Producing them needs the app
-  running on a device, which needs the toolchains listed above.
 
 ## Roadmap
 
