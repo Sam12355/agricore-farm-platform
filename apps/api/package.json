@@ -28,7 +28,7 @@
     "@nestjs/platform-express": "^10.4.15",
     "@nestjs/platform-socket.io": "^10.4.15",
     "@nestjs/websockets": "^10.4.15",
-    "@nestjs/graphql": "^12.2.2",
+    "@nestjs/graphql": "^13.4.2",
     "@nestjs/apollo": "^12.2.2",
     "@apollo/server": "^4.11.3",
     "graphql": "^16.10.0",
