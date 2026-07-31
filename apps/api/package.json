@@ -30,7 +30,7 @@
     "@nestjs/websockets": "^10.4.15",
     "@nestjs/graphql": "^12.2.2",
     "@nestjs/apollo": "^12.2.2",
-    "@apollo/server": "^4.11.3",
+    "@apollo/server": "^5.5.1",
     "graphql": "^16.10.0",
     "graphql-subscriptions": "^3.0.0",
     "helmet": "^8.0.0",
