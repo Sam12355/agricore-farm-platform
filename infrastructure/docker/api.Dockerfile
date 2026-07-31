@@ -5,7 +5,7 @@
 # things that can be exploited in a running container.
 
 # ---- Stage 1: install dependencies ------------------------------------------------
-FROM node:22-alpine AS deps
+FROM node:25-alpine AS deps
 
 RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
 WORKDIR /repo
@@ -34,7 +34,7 @@ RUN pnpm --filter "./packages/**" -r build \
  && pnpm prune --prod
 
 # ---- Stage 3: runtime --------------------------------------------------------------
-FROM node:22-alpine AS runtime
+FROM node:25-alpine AS runtime
 
 # Alpine ships a node user already; use it rather than creating another. Running as
 # root inside a container is the default nobody should accept.
