@@ -31,7 +31,7 @@
     "@nestjs/graphql": "^12.2.2",
     "@nestjs/apollo": "^12.2.2",
     "@apollo/server": "^4.11.3",
-    "graphql": "^16.10.0",
+    "graphql": "^17.0.2",
     "graphql-subscriptions": "^3.0.0",
     "helmet": "^8.0.0",
     "ioredis": "^5.4.2",
