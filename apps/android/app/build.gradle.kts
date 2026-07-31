@@ -104,7 +104,7 @@ dependencies {
     implementation("androidx.room:room-ktx:2.6.1")
 
     implementation("androidx.work:work-runtime-ktx:2.10.0")
-    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+    implementation("androidx.security:security-crypto:1.1.0")
 
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
     implementation("com.squareup.retrofit2:converter-kotlinx-serialization:2.11.0")
