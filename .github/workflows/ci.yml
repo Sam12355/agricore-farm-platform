@@ -177,7 +177,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
       - name: Assemble debug
         working-directory: apps/android
         # No wrapper binary is committed, so the gradle provided by setup-gradle is used.
